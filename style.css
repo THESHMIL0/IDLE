@@ -1,20 +1,26 @@
 body {
     margin: 0;
     overflow: hidden;
-    background: #1a1a1a;
-    font-family: 'Arial', sans-serif;
-    touch-action: none;
+    background: #121212;
+    font-family: 'Segoe UI', sans-serif;
+    touch-action: none; /* Critical for mobile */
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     color: white;
+    user-select: none;
+}
+
+#game-container {
+    position: relative;
+    box-shadow: 0 0 50px rgba(0,0,0,0.5);
 }
 
 canvas {
-    background: radial-gradient(circle, #f3d09b 20%, #8b5a2b 100%);
-    box-shadow: 0 0 20px rgba(0,0,0,0.8);
-    border-radius: 4px;
+    background: radial-gradient(circle, #f5e1a4 10%, #c59b6d 90%);
+    border-radius: 8px;
+    display: block;
 }
 
 .ui-layer {
@@ -23,38 +29,47 @@ canvas {
     justify-content: center; align-items: center;
     background: rgba(0, 0, 0, 0.9);
     z-index: 10;
+    transition: 0.3s;
 }
 
-.hidden { display: none !important; }
+.hidden { display: none !important; opacity: 0; }
+
+.glow { text-shadow: 0 0 10px #ff5722; font-size: 40px; margin-bottom: 20px; }
 
 .btn {
-    background: #ff5722; color: white; border: none;
-    padding: 15px 30px; margin: 10px; font-size: 18px;
-    border-radius: 30px; font-weight: bold; cursor: pointer; width: 220px;
-    box-shadow: 0 4px #c41c00;
+    background: linear-gradient(45deg, #ff5722, #ff8a50);
+    border: none; color: white;
+    padding: 15px 40px; margin: 10px; font-size: 18px;
+    border-radius: 30px; font-weight: bold; cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255, 87, 34, 0.4);
+    width: 250px;
 }
-.btn:active { transform: scale(0.95); }
-.btn-shop { background: #9c27b0; box-shadow: 0 4px #6a0080; }
-.btn-small { width: auto; padding: 8px 15px; font-size: 14px; }
+.btn:active { transform: scale(0.96); }
+.btn-shop { background: linear-gradient(45deg, #9c27b0, #ba68c8); }
+
+.btn-small {
+    background: rgba(255,255,255,0.2); border: 1px solid #fff;
+    color: #fff; padding: 5px 15px; border-radius: 15px;
+    font-size: 12px; cursor: pointer;
+}
 
 #shop-list {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    max-height: 50vh; overflow-y: auto; padding: 10px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+    max-height: 50vh; overflow-y: auto; padding: 10px; width: 80%;
 }
 .shop-item {
     background: #333; padding: 15px; border-radius: 10px;
     border: 2px solid #555; text-align: center;
 }
-.shop-item.owned { border-color: #4caf50; }
+.shop-item.owned { border-color: #4caf50; box-shadow: 0 0 10px rgba(76, 175, 80, 0.3); }
 
 #hud {
-    position: absolute; top: 0; width: 100%; padding: 10px;
+    position: absolute; top: 0; width: 100%; padding: 15px;
     display: flex; justify-content: space-between;
-    pointer-events: none; z-index: 5;
-    box-sizing: border-box;
+    pointer-events: none; z-index: 5; box-sizing: border-box;
 }
-.hud-btn { pointer-events: auto; }
-#turn-indicator {
-    background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 15px;
-    font-weight: bold; font-size: 18px;
+.btn-small { pointer-events: auto; }
+#message-box {
+    background: rgba(0,0,0,0.6); padding: 5px 20px;
+    border-radius: 20px; font-weight: bold;
 }
