@@ -1,1 +1,467 @@
-<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Idle Game</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            background-color: #f4f4f4;\n            color: #333;\n            margin: 0;\n            padding: 0;\n            display: flex;\n            flex-direction: column;\n            align-items: center;\n            justify-content: center;\n            height: 100vh;\n        }\n        #game {\n            background: #fff;\n            padding: 20px;\n            border-radius: 5px;\n            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);\n        }\n        button {\n            padding: 10px;\n            margin: 5px;\n            cursor: pointer;\n            background: #007bff;\n            color: white;\n            border: none;\n            border-radius: 5px;\n        }\n        button:hover {\n            background: #0056b3;\n        }\n        .upgrade {\n            margin: 15px 0;\n        }\n    </style>\n</head>\n<body>\n    <div id=\"game\">\n        <h1>Idle Game</h1>\n        <p>Current Balance: <span id=\"balance\">0</span> Coins</p>\n        <p>Per Second Earnings: <span id=\"perSecond\">0</span> Coins</p>\n        <button id=\"clickBtn\">Click to Earn!</button>\n        <div class=\"upgrades\">\n            <h2>Upgrades</h2>\n            <div class=\"upgrade\"><button id=\"upgrade1\">Upgrade 1 (+1/sec - 10 coins)</button></div>\n            <div class=\"upgrade\"><button id=\"upgrade2\">Upgrade 2 (+5/sec - 50 coins)</button></div>\n            <div class=\"upgrade\"><button id=\"prestige\">Prestige (Reset for 100 coins)</button></div>\n        </div>\n    </div>\n    <script>\n        let balance = 0;\n        let perSecond = 0;\n        let upgrades = [ { cost: 10, increment: 1 }, { cost: 50, increment: 5 } ];\n        let prestigeCost = 100;\n        const balanceDisplay = document.getElementById(\"balance\");\n        const perSecondDisplay = document.getElementById(\"perSecond\");\n\n        function updateDisplay() {\n            balanceDisplay.innerText = balance;\n            perSecondDisplay.innerText = perSecond;\n            saveGame();\n        }\n\n        document.getElementById(\"clickBtn\").addEventListener(\"click\", () => {\n            balance += 1;\n            updateDisplay();\n        });\n\n        upgrades.forEach((upgrade, index) => {\n            document.getElementById(\`upgrade${index + 1}\`).addEventListener(\"click\", () => {\n                if (balance >= upgrade.cost) {\n                    balance -= upgrade.cost;\n                    perSecond += upgrade.increment;\n                    updateDisplay();\n                } else {\n                    alert(\"Not enough coins!\");\n                }\n            });\n        });\n\n        document.getElementById(\"prestige\").addEventListener(\"click\", () => {\n            if (balance >= prestigeCost) {\n                balance = 0;\n                perSecond = 0;\n                alert(\"Prestige activated!\");\n                updateDisplay();\n            } else {\n                alert(\"Not enough coins for prestige!\");\n            }\n        });\n\n        function earnPerSecond() {\n            balance += perSecond;\n            updateDisplay();\n        }\n\n        function saveGame() {\n            localStorage.setItem(\"idleGame\", JSON.stringify({ balance, perSecond }));\n        }\n\n        function loadGame() {\n            const savedGame = JSON.parse(localStorage.getItem(\"idleGame\"));\n            if (savedGame) {\n                balance = savedGame.balance;\n                perSecond = savedGame.perSecond;\n                updateDisplay();\n            }\n        }\n\n        loadGame();\n        setInterval(earnPerSecond, 1000);\n    </script>\n</body>\n</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pixel Pocket v1</title>
+    <style>
+        /* --- THEME --- */
+        :root {
+            --bg-body: #e0e5ec;
+            --bg-screen: #f0f4f8;
+            --primary: #6c5ce7; /* Purple */
+            --secondary: #00b894; /* Green */
+            --accent: #ff7675; /* Red */
+            --text: #2d3436;
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+        }
+
+        /* --- CORE --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: none; font-family: 'Verdana', sans-serif; }
+        body { 
+            margin: 0; background: var(--bg-body); color: var(--text); 
+            overflow: hidden; height: 100vh; width: 100vw; 
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* --- NEUMORPHIC DEVICE --- */
+        .device {
+            width: 100%; height: 100%; max-width: 450px; 
+            background: var(--bg-body);
+            display: flex; flex-direction: column; position: relative; overflow: hidden;
+        }
+        @media (min-width: 500px) {
+            .device { 
+                height: 95vh; border-radius: 40px; 
+                box-shadow: 20px 20px 60px var(--shadow-dark), -20px -20px 60px var(--shadow-light);
+                border: 8px solid var(--bg-body);
+            }
+        }
+
+        /* --- SCREENS --- */
+        .screen {
+            flex-grow: 1; margin: 20px; border-radius: 20px;
+            background: var(--bg-screen);
+            box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+        
+        .view {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+            transition: transform 0.3s ease, opacity 0.3s; opacity: 0; pointer-events: none;
+        }
+        .view.active { opacity: 1; pointer-events: all; z-index: 10; transform: scale(1); }
+        .view.hidden { transform: scale(0.9); }
+
+        /* --- MENU UI --- */
+        .logo { font-size: 32px; font-weight: 900; color: var(--primary); margin-top: 20px; letter-spacing: -1px; }
+        .subtitle { font-size: 12px; color: #888; margin-bottom: 30px; font-weight: bold; text-transform: uppercase; }
+
+        .game-card {
+            width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 15px;
+            background: var(--bg-body);
+            box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+            display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.1s;
+        }
+        .game-card:active { box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light); transform: scale(0.98); }
+        
+        .card-icon { width: 50px; height: 50px; border-radius: 12px; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .card-title { font-weight: bold; font-size: 16px; color: var(--text); }
+        .card-desc { font-size: 11px; color: #888; }
+
+        /* --- GAME HEADER --- */
+        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; height: 40px; margin-bottom: 10px; z-index: 20; }
+        .btn-icon { 
+            width: 40px; height: 40px; border-radius: 50%; background: var(--bg-body);
+            box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+            display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); cursor: pointer;
+        }
+        .btn-icon:active { box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); }
+        
+        .score-pill { 
+            background: var(--bg-body); padding: 8px 20px; border-radius: 20px; font-weight: bold; color: var(--primary);
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+        }
+
+        /* --- CANVAS --- */
+        canvas { border-radius: 12px; width: 100%; height: 100%; object-fit: contain; }
+        
+        /* --- GAME OVER MODAL --- */
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); backdrop-filter: blur(5px);
+            z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .modal.visible { opacity: 1; pointer-events: all; }
+        
+        .btn-primary {
+            background: var(--primary); color: #fff; border: none; padding: 15px 40px; border-radius: 30px;
+            font-size: 18px; font-weight: bold; margin-top: 20px; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.3);
+        }
+        .btn-primary:active { transform: scale(0.95); }
+
+        /* --- TAP HERO SPECIFIC --- */
+        .hero-area { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .monster { font-size: 100px; transition: transform 0.1s; cursor: pointer; }
+        .monster:active { transform: scale(0.9) rotate(5deg); }
+        .hp-bar { width: 80%; height: 10px; background: #ddd; border-radius: 5px; overflow: hidden; margin-top: 20px; }
+        .hp-fill { width: 100%; height: 100%; background: var(--accent); transition: width 0.2s; }
+        .damage-text { position: absolute; font-weight: bold; color: var(--accent); font-size: 24px; animation: floatUp 0.5s forwards; pointer-events: none; }
+        
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-50px); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="device">
+    <div class="screen">
+        
+        <div id="view-home" class="view active">
+            <div class="logo">Pixel Pocket</div>
+            <div class="subtitle">v1.0 • Multi-Game System</div>
+
+            <div class="game-card" onclick="loadGame('jumper')">
+                <div class="card-icon" style="background:#dfe6e9; color:#0984e3;">☁️</div>
+                <div>
+                    <div class="card-title">Sky Jump</div>
+                    <div class="card-desc">Jump over spikes!</div>
+                </div>
+            </div>
+
+            <div class="game-card" onclick="loadGame('catcher')">
+                <div class="card-icon" style="background:#ffeaa7; color:#d63031;">🍎</div>
+                <div>
+                    <div class="card-title">Fruit Catcher</div>
+                    <div class="card-desc">Don't drop the apples!</div>
+                </div>
+            </div>
+
+            <div class="game-card" onclick="loadGame('hero')">
+                <div class="card-icon" style="background:#ff7675; color:#2d3436;">⚔️</div>
+                <div>
+                    <div class="card-title">Tap Hero</div>
+                    <div class="card-desc">Defeat the monsters!</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-canvas" class="view">
+            <div class="header">
+                <div class="btn-icon" onclick="goHome()">←</div>
+                <div class="score-pill" id="canvas-score">0</div>
+                <div style="width:40px;"></div> </div>
+            <canvas id="game-canvas"></canvas>
+            <div style="text-align:center; color:#888; font-size:12px; margin-top:10px;">TAP TO PLAY / CONTROL</div>
+        </div>
+
+        <div id="view-hero" class="view">
+            <div class="header">
+                <div class="btn-icon" onclick="goHome()">←</div>
+                <div class="score-pill" style="color:gold;">💰 <span id="hero-gold">0</span></div>
+                <div class="btn-icon" onclick="upgradeHero()">⚡</div>
+            </div>
+            <div class="hero-area">
+                <div style="margin-bottom:10px; font-weight:bold; color:#888;">LVL <span id="monster-lvl">1</span></div>
+                <div class="monster" id="monster-sprite" onmousedown="hitMonster(event)" ontouchstart="hitMonster(event)">👾</div>
+                <div class="hp-bar"><div class="hp-fill" id="hp-fill"></div></div>
+                <div style="margin-top:20px; font-size:12px; color:#aaa;">TAP TO ATTACK</div>
+            </div>
+        </div>
+
+        <div id="modal-over" class="modal">
+            <h1 style="color:var(--text); margin-bottom:10px;">GAME OVER</h1>
+            <p style="color:#888;">SCORE: <span id="final-score" style="font-weight:bold; color:var(--primary);">0</span></p>
+            <button class="btn-primary" onclick="restartCurrent()">PLAY AGAIN</button>
+            <div class="btn-icon" style="margin-top:20px; width:50px; height:50px;" onclick="goHome()">🏠</div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // --- SYSTEM ---
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    let currentGame = null;
+    let loopId = null;
+    let score = 0;
+    let isPlaying = false;
+    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // --- NAVIGATION ---
+    function goHome() {
+        isPlaying = false;
+        if(loopId) cancelAnimationFrame(loopId);
+        document.querySelectorAll('.view').forEach(v => {
+            v.classList.remove('active');
+            v.classList.add('hidden');
+        });
+        document.getElementById('view-home').classList.remove('hidden');
+        document.getElementById('view-home').classList.add('active');
+        document.getElementById('modal-over').classList.remove('visible');
+    }
+
+    function loadGame(game) {
+        document.getElementById('view-home').classList.remove('active');
+        document.getElementById('view-home').classList.add('hidden');
+        
+        if (game === 'hero') {
+            document.getElementById('view-hero').classList.add('active');
+            document.getElementById('view-hero').classList.remove('hidden');
+            initHero();
+        } else {
+            document.getElementById('view-canvas').classList.add('active');
+            document.getElementById('view-canvas').classList.remove('hidden');
+            resizeCanvas();
+            if(game === 'jumper') initJumper();
+            if(game === 'catcher') initCatcher();
+        }
+        currentGame = game;
+    }
+
+    function restartCurrent() {
+        document.getElementById('modal-over').classList.remove('visible');
+        if(currentGame === 'jumper') initJumper();
+        if(currentGame === 'catcher') initCatcher();
+    }
+
+    function gameOver(finalScore) {
+        isPlaying = false;
+        document.getElementById('final-score').innerText = finalScore;
+        document.getElementById('modal-over').classList.add('visible');
+        sfx('die');
+    }
+
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width - 40; // padding
+        canvas.height = rect.height - 100; // header space
+    }
+
+    // --- GAME 1: JUMPER (Flappy/Dino Style) ---
+    let player, obstacles, gravity;
+    
+    function initJumper() {
+        player = { x: 50, y: 200, dy: 0, size: 30, grounded: false };
+        obstacles = [];
+        gravity = 0.6;
+        score = 0;
+        isPlaying = true;
+        document.getElementById('canvas-score').innerText = 0;
+        
+        // Input
+        canvas.onmousedown = canvas.ontouchstart = () => {
+            if(player.grounded) { player.dy = -12; player.grounded = false; sfx('jump'); }
+        };
+        
+        loopJumper();
+    }
+
+    function loopJumper() {
+        if(!isPlaying) return;
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        
+        // Physics
+        player.dy += gravity;
+        player.y += player.dy;
+        
+        // Ground
+        if(player.y + player.size > canvas.height) {
+            player.y = canvas.height - player.size;
+            player.dy = 0;
+            player.grounded = true;
+        }
+
+        // Obstacles
+        if(Math.random() < 0.02) {
+            obstacles.push({x: canvas.width, w: 20, h: 40 + Math.random()*30});
+        }
+
+        ctx.fillStyle = "#6c5ce7"; // Player Color
+        ctx.fillRect(player.x, player.y, player.size, player.size);
+
+        ctx.fillStyle = "#ff7675"; // Spike Color
+        for(let i=0; i<obstacles.length; i++) {
+            let o = obstacles[i];
+            o.x -= 5;
+            ctx.fillRect(o.x, canvas.height - o.h, o.w, o.h);
+
+            // Collision
+            if(player.x < o.x + o.w && player.x + player.size > o.x && 
+               player.y + player.size > canvas.height - o.h) {
+                gameOver(score);
+                return;
+            }
+
+            if(o.x + o.w < 0) {
+                obstacles.splice(i, 1);
+                i--;
+                score++;
+                document.getElementById('canvas-score').innerText = score;
+            }
+        }
+        
+        loopId = requestAnimationFrame(loopJumper);
+    }
+
+    // --- GAME 2: FRUIT CATCHER ---
+    let basket, fruits;
+    
+    function initCatcher() {
+        basket = { x: canvas.width/2, w: 60, h: 20 };
+        fruits = [];
+        score = 0;
+        isPlaying = true;
+        document.getElementById('canvas-score').innerText = 0;
+        
+        // Controls
+        canvas.ontouchmove = (e) => {
+            e.preventDefault();
+            let rect = canvas.getBoundingClientRect();
+            let touchX = e.touches[0].clientX - rect.left;
+            basket.x = touchX - basket.w/2;
+        };
+        canvas.onmousemove = (e) => {
+            let rect = canvas.getBoundingClientRect();
+            let mouseX = e.clientX - rect.left;
+            basket.x = mouseX - basket.w/2;
+        };
+
+        loopCatcher();
+    }
+
+    function loopCatcher() {
+        if(!isPlaying) return;
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+
+        // Spawn Fruits
+        if(Math.random() < 0.03) {
+            fruits.push({x: Math.random() * (canvas.width-20), y: -20, type: Math.random()>0.8 ? 'bomb' : 'fruit'});
+        }
+
+        // Draw Basket
+        ctx.fillStyle = "#2d3436";
+        ctx.fillRect(basket.x, canvas.height - 30, basket.w, basket.h);
+
+        // Draw Fruits
+        for(let i=0; i<fruits.length; i++) {
+            let f = fruits[i];
+            f.y += 4;
+            
+            ctx.font = "20px Arial";
+            ctx.fillText(f.type==='bomb'?'💣':'🍎', f.x, f.y);
+
+            // Catch Logic
+            if(f.y > canvas.height - 40 && f.y < canvas.height - 10 && 
+               f.x > basket.x - 10 && f.x < basket.x + basket.w) {
+                if(f.type === 'bomb') {
+                    gameOver(score);
+                    return;
+                } else {
+                    score++;
+                    document.getElementById('canvas-score').innerText = score;
+                    sfx('coin');
+                    fruits.splice(i, 1);
+                    i--;
+                }
+            } else if (f.y > canvas.height) {
+                if(f.type === 'fruit') {
+                    // Missed fruit = Game Over? Or just lose point? Let's do Game Over for challenge
+                    gameOver(score); 
+                    return;
+                }
+                fruits.splice(i, 1);
+                i--;
+            }
+        }
+        loopId = requestAnimationFrame(loopCatcher);
+    }
+
+    // --- GAME 3: TAP HERO ---
+    let hero = { gold: 0, damage: 1 };
+    let monster = { hp: 10, maxHp: 10, level: 1 };
+    const sprites = ['👾', '👹', '💀', '👽', '🐉', '🦖'];
+
+    function initHero() {
+        updateHeroUI();
+    }
+
+    function hitMonster(e) {
+        if(e) e.preventDefault();
+        monster.hp -= hero.damage;
+        
+        // FX
+        sfx('hit');
+        spawnText(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, "-" + hero.damage);
+        
+        // Animation
+        const m = document.getElementById('monster-sprite');
+        m.style.transform = "scale(0.8)";
+        setTimeout(() => m.style.transform = "scale(1)", 100);
+
+        if(monster.hp <= 0) {
+            hero.gold += monster.level * 5;
+            monster.level++;
+            monster.maxHp = Math.floor(monster.maxHp * 1.5);
+            monster.hp = monster.maxHp;
+            
+            // New Sprite
+            m.innerText = sprites[(monster.level - 1) % sprites.length];
+            sfx('levelup');
+        }
+        updateHeroUI();
+    }
+
+    function upgradeHero() {
+        let cost = hero.damage * 50;
+        if(hero.gold >= cost) {
+            hero.gold -= cost;
+            hero.damage++;
+            sfx('powerup');
+            updateHeroUI();
+            alert("Upgrade! Damage: " + hero.damage);
+        } else {
+            alert("Need " + cost + " Gold!");
+        }
+    }
+
+    function updateHeroUI() {
+        document.getElementById('hero-gold').innerText = hero.gold;
+        document.getElementById('monster-lvl').innerText = monster.level;
+        let pct = (monster.hp / monster.maxHp) * 100;
+        document.getElementById('hp-fill').style.width = pct + "%";
+    }
+
+    function spawnText(x, y, text) {
+        let el = document.createElement('div');
+        el.className = 'damage-text';
+        el.innerText = text;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 500);
+    }
+
+    // --- AUDIO ---
+    function sfx(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        
+        const t = audioCtx.currentTime;
+        if(type === 'jump') { osc.frequency.setValueAtTime(200, t); osc.frequency.linearRampToValueAtTime(400, t+0.1); gain.gain.exponentialRampToValueAtTime(0.01, t+0.1); }
+        if(type === 'coin') { osc.frequency.setValueAtTime(600, t); osc.frequency.linearRampToValueAtTime(1000, t+0.1); gain.gain.exponentialRampToValueAtTime(0.01, t+0.1); }
+        if(type === 'die') { osc.type='sawtooth'; osc.frequency.setValueAtTime(200, t); osc.frequency.linearRampToValueAtTime(50, t+0.5); gain.gain.exponentialRampToValueAtTime(0.01, t+0.5); }
+        if(type === 'hit') { osc.type='square'; osc.frequency.setValueAtTime(100, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.1); }
+        if(type === 'powerup') { osc.frequency.setValueAtTime(400, t); osc.frequency.linearRampToValueAtTime(800, t+0.3); }
+        
+        osc.start(t); osc.stop(t+0.5);
+    }
+</script>
+</body>
+</html>
