@@ -3,30 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Carrom Pool Mobile</title>
+    <title>Carrom Master 3D</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="game-container">
     <div id="menu" class="ui-layer">
-        <h1 class="glow">CARROM PRO</h1>
-        <div class="stats">💰 Coins: <span id="menu-coins">0</span></div>
-        <button class="btn" onclick="startGame('ai')">🤖 VS COMPUTER</button>
-        <button class="btn" onclick="startGame('pvp')">👥 2 PLAYER</button>
-        <button class="btn btn-shop" onclick="openShop()">🛒 SKINS SHOP</button>
+        <h1 class="title">CARROM<br>MASTER</h1>
+        <div class="stats-box">💰 Coins: <span id="menu-coins">0</span></div>
+        <button class="btn primary" onclick="startGame('ai')">🤖 VS COMPUTER</button>
+        <button class="btn secondary" onclick="startGame('pvp')">👥 2 PLAYER</button>
+        <button class="btn shop-btn" onclick="openShop()">🛒 SKINS & SHOP</button>
     </div>
 
     <div id="shop" class="ui-layer hidden">
         <h2>STRIKER SHOP</h2>
-        <div class="stats">Coins: <span id="shop-coins">0</span></div>
+        <div class="stats-box">Coins: <span id="shop-coins">0</span></div>
         <div id="shop-list"></div>
-        <button class="btn" onclick="closeShop()">BACK</button>
+        <button class="btn secondary" onclick="closeShop()">BACK</button>
     </div>
 
     <div id="hud" class="hidden">
-        <button class="btn-small" onclick="goToMenu()">EXIT</button>
-        <div id="message-box">Player 1</div>
+        <div class="top-bar">
+            <button class="icon-btn" onclick="goToMenu()">🏠</button>
+            <div id="score-board">
+                <span id="p1-score" class="active-turn">P1: 0</span>
+                <span id="p2-score">P2: 0</span>
+            </div>
+        </div>
+        <div id="message-area">Your Turn</div>
     </div>
 
     <canvas id="canvas"></canvas>
