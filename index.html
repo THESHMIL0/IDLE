@@ -10,29 +10,23 @@
 
 <div id="game-container">
     <div id="menu" class="ui-layer">
-        <h1>CARROM PRO</h1>
+        <h1>CARROM MASTER</h1>
         <div class="stats">💰 Coins: <span id="menu-coins">0</span></div>
         <button class="btn" onclick="startGame('ai')">🤖 vs AI</button>
         <button class="btn" onclick="startGame('pvp')">👥 2 Player</button>
-        <button class="btn btn-shop" onclick="openShop()">🛒 Skins Shop</button>
+        <button class="btn btn-shop" onclick="openShop()">🛒 Shop</button>
     </div>
 
     <div id="shop" class="ui-layer hidden">
         <h2>STRIKER SHOP</h2>
-        <div class="stats">Your Coins: <span id="shop-coins">0</span></div>
+        <div class="stats">Coins: <span id="shop-coins">0</span></div>
         <div id="shop-list"></div>
-        <button class="btn" onclick="closeShop()">Back to Menu</button>
-    </div>
-
-    <div id="game-over" class="ui-layer hidden">
-        <h1 id="winner-text">PLAYER 1 WINS!</h1>
-        <p>Reward: +50 Coins</p>
-        <button class="btn" onclick="goToMenu()">Main Menu</button>
+        <button class="btn" onclick="closeShop()">Back</button>
     </div>
 
     <div id="hud" class="hidden">
         <button class="btn btn-small hud-btn" onclick="goToMenu()">Exit</button>
-        <div id="turn-indicator">Player 1's Turn</div>
+        <div id="turn-indicator">Player 1</div>
     </div>
 
     <canvas id="canvas"></canvas>
