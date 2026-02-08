@@ -1,49 +1,55 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-// --- CONFIGURATION ---
+// --- CONSTANTS ---
 let BOARD_SIZE = 600;
-const FRICTION = 0.98;
-const WALL_BOUNCE = 0.6;
+const FRICTION = 0.985; // Slippery board
+const WALL_BOUNCE = 0.7;
+const POCKET_RADIUS_PCT = 0.07;
+const STRIKER_RADIUS_PCT = 0.045;
+const PUCK_RADIUS_PCT = 0.035;
 
 // --- STATE ---
-let gameState = 'MENU'; // MENU, PLAYING
-let gameMode = 'ai'; // ai, pvp
-let coins = parseInt(localStorage.getItem('c_coins')) || 100;
+let gameState = 'MENU';
+let gameMode = 'ai';
+let coins = parseInt(localStorage.getItem('cm_coins')) || 100;
 let currentPlayer = 1;
-let isTurnActive = false; // True if balls are moving
-
-// Touch State
-let inputMode = 'NONE'; // NONE, SLIDING, AIMING
-let drag = { startX: 0, startY: 0, currX: 0, currY: 0 };
+let scores = {1: 0, 2: 0};
+let isTurnActive = false;
 
 // Entities
 let striker = { x: 0, y: 0, vx: 0, vy: 0, r: 0, color: '#fff' };
 let pucks = [];
 let pockets = [];
 
-// Shop Data
-let skins = [
-    {id:'white', name:'Classic', color:'#ffffff', price:0},
-    {id:'gold', name:'Gold Pro', color:'#ffd700', price:200},
-    {id:'neon', name:'Neon Blue', color:'#00ffff', price:500},
-    {id:'ruby', name:'Ruby Red', color:'#ff0055', price:1000}
-];
-let owned = JSON.parse(localStorage.getItem('c_owned')) || ['white'];
-let currentSkin = localStorage.getItem('c_skin') || '#ffffff';
+// Input
+let inputMode = 'NONE'; // SLIDING, AIMING
+let drag = { startX:0, startY:0, curX:0, curY:0 };
 
-// --- SETUP ---
+// Shop
+let currentSkin = localStorage.getItem('cm_skin') || '#ffffff';
+let ownedSkins = JSON.parse(localStorage.getItem('cm_owned')) || ['white'];
+const skinData = [
+    {id:'white', name:'Classic', color:'#ffffff', price:0},
+    {id:'neon', name:'Neon Cyan', color:'#00ffff', price:200},
+    {id:'gold', name:'Royal Gold', color:'#ffd700', price:500},
+    {id:'ruby', name:'Ruby Red', color:'#ff0055', price:800},
+    {id:'dark', name:'Stealth', color:'#111111', price:1000}
+];
+
+// --- INITIALIZATION ---
 function resize() {
-    let min = Math.min(window.innerWidth, window.innerHeight);
-    BOARD_SIZE = min * 0.95;
-    canvas.width = BOARD_SIZE;
-    canvas.height = BOARD_SIZE;
+    let size = Math.min(window.innerWidth, window.innerHeight) * 0.98;
+    BOARD_SIZE = size;
+    canvas.width = size;
+    canvas.height = size;
     
-    // Pocket Positions
-    let r = BOARD_SIZE * 0.06;
+    let pr = BOARD_SIZE * POCKET_RADIUS_PCT;
     pockets = [
-        {x:r, y:r}, {x:BOARD_SIZE-r, y:r},
-        {x:r, y:BOARD_SIZE-r}, {x:BOARD_SIZE-r, y:BOARD_SIZE-r}
+        {x: pr, y: pr}, 
+        {x: size-pr, y: pr}, 
+        {x: pr, y: size-pr}, 
+        {x: size-pr, y: size-pr}
     ];
 }
 window.addEventListener('resize', resize);
@@ -53,48 +59,56 @@ function startGame(mode) {
     gameMode = mode;
     gameState = 'PLAYING';
     currentPlayer = 1;
+    scores = {1:0, 2:0};
     isTurnActive = false;
     
-    // Setup Striker
-    striker.r = BOARD_SIZE * 0.045;
+    // Initial Setup
+    striker.r = BOARD_SIZE * STRIKER_RADIUS_PCT;
     striker.color = currentSkin;
     resetStriker();
     
-    // Setup Pucks
+    // Setup Pucks (Carrom Formation)
     pucks = [];
     let cx = BOARD_SIZE/2, cy = BOARD_SIZE/2;
-    let pr = BOARD_SIZE * 0.035;
+    let r = BOARD_SIZE * PUCK_RADIUS_PCT;
     
-    // Queen
-    pucks.push({x:cx, y:cy, vx:0, vy:0, r:pr, color:'#ff0055', type:'queen', active:true});
+    // Queen (Center)
+    pucks.push({x:cx, y:cy, vx:0, vy:0, r:r, color:'#ff0055', type:'queen', active:true});
     
-    // Circle
-    for(let i=0; i<8; i++) {
-        let ang = (i/8) * Math.PI * 2;
-        let dist = pr * 2.1;
-        pucks.push({
-            x: cx + Math.cos(ang)*dist,
-            y: cy + Math.sin(ang)*dist,
-            vx:0, vy:0, r:pr, active:true,
-            color: i%2==0 ? '#eee' : '#222',
-            type: i%2==0 ? 'white' : 'black'
-        });
+    // Inner Circle (6 pucks)
+    for(let i=0; i<6; i++) {
+        let ang = (i/6) * Math.PI*2;
+        pucks.push(createPuck(cx, cy, ang, r*2.1, i%2==0 ? 'white' : 'black'));
+    }
+    // Outer Circle (12 pucks)
+    for(let i=0; i<12; i++) {
+        let ang = (i/12) * Math.PI*2;
+        pucks.push(createPuck(cx, cy, ang, r*4.1, i%2==0 ? 'white' : 'black'));
     }
 
     document.getElementById('menu').classList.add('hidden');
     document.getElementById('hud').classList.remove('hidden');
-    updateUI();
+    updateHUD();
     loop();
+}
+
+function createPuck(cx, cy, angle, dist, type) {
+    return {
+        x: cx + Math.cos(angle)*dist,
+        y: cy + Math.sin(angle)*dist,
+        vx: 0, vy: 0,
+        r: BOARD_SIZE * PUCK_RADIUS_PCT,
+        color: type === 'white' ? '#f0f0f0' : '#222',
+        type: type,
+        active: true
+    };
 }
 
 function resetStriker() {
     striker.vx = 0; striker.vy = 0;
-    striker.x = BOARD_SIZE/2;
-    // P1 bottom, P2 top
-    striker.y = currentPlayer === 1 ? BOARD_SIZE*0.82 : BOARD_SIZE*0.18;
-    
-    // If striker stuck in hole, reset safely
-    if(striker.x < 0) striker.x = BOARD_SIZE/2;
+    striker.x = BOARD_SIZE / 2;
+    // Baseline Position (80% down for P1, 20% down for P2)
+    striker.y = currentPlayer === 1 ? BOARD_SIZE * 0.8 : BOARD_SIZE * 0.2;
 }
 
 // --- PHYSICS ENGINE ---
@@ -102,10 +116,10 @@ function update() {
     if(gameState !== 'PLAYING') return;
     
     let moving = false;
-    let all = [striker, ...pucks].filter(p => p.active || p === striker);
+    let entities = [striker, ...pucks].filter(p => p.active || p===striker);
 
-    all.forEach(p => {
-        // Movement
+    entities.forEach(p => {
+        // Move
         if(Math.abs(p.vx) > 0.05 || Math.abs(p.vy) > 0.05) {
             moving = true;
             p.x += p.vx;
@@ -121,134 +135,147 @@ function update() {
 
             // Pockets
             pockets.forEach(pkt => {
-                let d = Math.hypot(p.x-pkt.x, p.y-pkt.y);
-                if(d < BOARD_SIZE*0.06) {
+                if(Math.hypot(p.x-pkt.x, p.y-pkt.y) < BOARD_SIZE*0.065) {
                     p.vx = 0; p.vy = 0;
                     if(p === striker) {
                         // Foul
-                        p.x = -500; // Hide
+                        p.x = -1000; 
+                        scores[currentPlayer] = Math.max(0, scores[currentPlayer] - 10);
                     } else {
+                        // Scored
                         p.active = false;
-                        p.x = -500;
+                        p.x = -1000;
+                        let points = p.type === 'queen' ? 50 : (p.type==='white'?20:10);
+                        scores[currentPlayer] += points;
                     }
                 }
             });
         }
     });
 
-    // Collisions (Ball vs Ball)
-    for(let i=0; i<all.length; i++) {
-        for(let j=i+1; j<all.length; j++) {
-            let p1 = all[i], p2 = all[j];
-            let dx = p2.x - p1.x;
-            let dy = p2.y - p1.y;
-            let dist = Math.hypot(dx, dy);
-            let minDist = p1.r + p2.r;
-
-            if(dist < minDist) {
-                // Resolve Overlap (Prevents sticking)
-                let angle = Math.atan2(dy, dx);
-                let overlap = minDist - dist;
-                let tx = Math.cos(angle) * overlap * 0.5;
-                let ty = Math.sin(angle) * overlap * 0.5;
-                p1.x -= tx; p1.y -= ty;
-                p2.x += tx; p2.y += ty;
-
-                // Bounce
-                let nx = dx / dist;
-                let ny = dy / dist;
-                let kx = p1.vx - p2.vx;
-                let ky = p1.vy - p2.vy;
-                let p = 2 * (nx * kx + ny * ky) / 2; // Mass = 1
-                p1.vx -= p * nx; p1.vy -= p * ny;
-                p2.vx += p * nx; p2.vy += p * ny;
-                moving = true;
-            }
+    // Collisions
+    for(let i=0; i<entities.length; i++) {
+        for(let j=i+1; j<entities.length; j++) {
+            resolveCollision(entities[i], entities[j]);
         }
     }
 
-    // Turn Handling
     if(isTurnActive && !moving) {
-        isTurnActive = false;
-        currentPlayer = currentPlayer===1 ? 2 : 1;
-        resetStriker();
-        updateUI();
-
-        if(gameMode === 'ai' && currentPlayer === 2) {
-            setTimeout(aiTurn, 1000);
-        }
+        endTurn();
     }
 }
 
-function aiTurn() {
-    // Simple AI: Find closest active puck
+function resolveCollision(p1, p2) {
+    let dx = p2.x - p1.x;
+    let dy = p2.y - p1.y;
+    let dist = Math.hypot(dx, dy);
+    let minDist = p1.r + p2.r;
+
+    if(dist < minDist) {
+        let angle = Math.atan2(dy, dx);
+        let overlap = minDist - dist;
+        
+        // Separate
+        let tx = Math.cos(angle) * overlap * 0.5;
+        let ty = Math.sin(angle) * overlap * 0.5;
+        p1.x -= tx; p1.y -= ty;
+        p2.x += tx; p2.y += ty;
+
+        // Bounce
+        let nx = dx/dist; let ny = dy/dist;
+        let kx = p1.vx - p2.vx;
+        let ky = p1.vy - p2.vy;
+        let p = 2 * (nx * kx + ny * ky) / 2;
+        p1.vx -= p * nx; p1.vy -= p * ny;
+        p2.vx += p * nx; p2.vy += p * ny;
+    }
+}
+
+function endTurn() {
+    isTurnActive = false;
+    
+    // Logic: Did I pocket a piece? If yes, keep turn (Simplified for this version)
+    // For now, simple strict switching
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    
+    resetStriker();
+    updateHUD();
+
+    if(gameMode === 'ai' && currentPlayer === 2) {
+        setTimeout(aiMove, 800);
+    }
+}
+
+function aiMove() {
+    // Find closest active puck
     let target = pucks.find(p => p.active);
     if(target) {
         let dx = target.x - striker.x;
         let dy = target.y - striker.y;
         let mag = Math.hypot(dx, dy);
-        // Shoot at it
-        striker.vx = (dx/mag) * 20;
-        striker.vy = (dy/mag) * 20;
+        
+        // Add some randomness/error
+        let error = (Math.random() - 0.5) * 20; 
+        
+        striker.vx = ((dx+error)/mag) * 25;
+        striker.vy = ((dy+error)/mag) * 25;
         isTurnActive = true;
-    } else {
-        // Game Over - No pucks left
-        alert("Game Over!");
-        goToMenu();
     }
 }
 
-// --- INPUTS ---
-canvas.addEventListener('touchstart', e => {
+// --- INPUT HANDLING ---
+canvas.addEventListener('touchstart', handleStart, {passive:false});
+canvas.addEventListener('touchmove', handleMove, {passive:false});
+canvas.addEventListener('touchend', handleEnd, {passive:false});
+
+function handleStart(e) {
     if(gameState !== 'PLAYING' || isTurnActive) return;
     if(gameMode === 'ai' && currentPlayer === 2) return;
-
     e.preventDefault();
+
     let r = canvas.getBoundingClientRect();
     let x = e.touches[0].clientX - r.left;
     let y = e.touches[0].clientY - r.top;
 
-    // Is player touching the striker?
-    let d = Math.hypot(x - striker.x, y - striker.y);
+    // Control Zones: Top 25% and Bottom 25% are for SLIDING
+    let isZone = currentPlayer===1 ? y > BOARD_SIZE*0.7 : y < BOARD_SIZE*0.3;
     
-    if(d < striker.r * 2) {
+    if(isZone && Math.abs(y - striker.y) < BOARD_SIZE*0.15) {
         inputMode = 'SLIDING';
+        // Snap striker to finger X immediately for better feel
+        striker.x = x; 
+        clampStriker();
     } else {
         inputMode = 'AIMING';
         drag.startX = x; drag.startY = y;
-        drag.currX = x; drag.currY = y;
+        drag.curX = x; drag.curY = y;
     }
-}, {passive: false});
+}
 
-canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
+function handleMove(e) {
     if(inputMode === 'NONE') return;
-    
+    e.preventDefault();
     let r = canvas.getBoundingClientRect();
     let x = e.touches[0].clientX - r.left;
     let y = e.touches[0].clientY - r.top;
 
     if(inputMode === 'SLIDING') {
         striker.x = x;
-        // Clamp to board
-        if(striker.x < striker.r) striker.x = striker.r;
-        if(striker.x > BOARD_SIZE-striker.r) striker.x = BOARD_SIZE-striker.r;
-    } else if (inputMode === 'AIMING') {
-        drag.currX = x;
-        drag.currY = y;
+        clampStriker();
+    } else {
+        drag.curX = x; drag.curY = y;
     }
-}, {passive: false});
+}
 
-canvas.addEventListener('touchend', e => {
+function handleEnd(e) {
     if(inputMode === 'AIMING') {
-        let dx = drag.startX - drag.currX;
-        let dy = drag.startY - drag.currY;
+        let dx = drag.startX - drag.curX;
+        let dy = drag.startY - drag.curY;
         let power = Math.hypot(dx, dy);
         
-        // Shoot if pulled enough
-        if(power > 10) {
-            power = Math.min(power, 200); // Max power
-            let force = power * 0.2;
+        if(power > 20) { // Min drag
+            power = Math.min(power, 250); // Max power
+            let force = power * 0.22;
             let ang = Math.atan2(dy, dx);
             striker.vx = Math.cos(ang) * force;
             striker.vy = Math.sin(ang) * force;
@@ -256,42 +283,80 @@ canvas.addEventListener('touchend', e => {
         }
     }
     inputMode = 'NONE';
-});
+}
 
-// --- RENDER ---
+function clampStriker() {
+    let margin = BOARD_SIZE * 0.1; // Keep away from pockets
+    if(striker.x < margin) striker.x = margin;
+    if(striker.x > BOARD_SIZE - margin) striker.x = BOARD_SIZE - margin;
+}
+
+// --- RENDERING ---
+function drawBoardPattern() {
+    // Draw Baseline lines
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2;
+    
+    // Top Line
+    let y1 = BOARD_SIZE * 0.2;
+    ctx.beginPath(); ctx.moveTo(BOARD_SIZE*0.1, y1); ctx.lineTo(BOARD_SIZE*0.9, y1); ctx.stroke();
+    ctx.beginPath(); ctx.arc(BOARD_SIZE*0.1, y1, 5, 0, 7); ctx.stroke(); // circle end
+    ctx.beginPath(); ctx.arc(BOARD_SIZE*0.9, y1, 5, 0, 7); ctx.stroke(); // circle end
+
+    // Bottom Line
+    let y2 = BOARD_SIZE * 0.8;
+    ctx.beginPath(); ctx.moveTo(BOARD_SIZE*0.1, y2); ctx.lineTo(BOARD_SIZE*0.9, y2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(BOARD_SIZE*0.1, y2, 5, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(BOARD_SIZE*0.9, y2, 5, 0, 7); ctx.stroke();
+
+    // Center Design
+    ctx.beginPath();
+    ctx.arc(BOARD_SIZE/2, BOARD_SIZE/2, BOARD_SIZE*0.15, 0, 7);
+    ctx.strokeStyle = '#a63c3c';
+    ctx.stroke();
+}
+
 function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBoardPattern();
 
     // Pockets
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = '#1a1a1a';
     pockets.forEach(p => {
-        ctx.beginPath(); ctx.arc(p.x, p.y, BOARD_SIZE*0.06, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, BOARD_SIZE*0.065, 0, 7); ctx.fill();
     });
 
     // Aim Line
     if(inputMode === 'AIMING') {
         ctx.beginPath();
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = 4;
-        ctx.setLineDash([5, 10]);
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 10]);
         ctx.moveTo(striker.x, striker.y);
-        // Draw line opposite to drag
-        let dx = drag.startX - drag.currX;
-        let dy = drag.startY - drag.currY;
+        let dx = drag.startX - drag.curX;
+        let dy = drag.startY - drag.curY;
         ctx.lineTo(striker.x + dx*2, striker.y + dy*2);
         ctx.stroke();
         ctx.setLineDash([]);
     }
 
-    // Pieces
-    [striker, ...pucks].forEach(p => {
-        if(!p.active && p !== striker) return;
+    // Pucks
+    [...pucks, striker].forEach(p => {
+        if(!p.active && p!==striker) return;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, 7);
         ctx.fillStyle = p.color;
         ctx.fill();
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 2;
+        
+        // Bevel effect (shine)
+        ctx.beginPath();
+        ctx.arc(p.x - p.r*0.2, p.y - p.r*0.2, p.r*0.3, 0, 7);
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fill();
+
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
         ctx.stroke();
     });
 }
@@ -303,11 +368,18 @@ function loop() {
 }
 
 // --- UI HELPERS ---
-function updateUI() {
+function updateHUD() {
     document.getElementById('menu-coins').innerText = coins;
     document.getElementById('shop-coins').innerText = coins;
-    let turnTxt = gameMode === 'ai' && currentPlayer === 2 ? "AI Thinking..." : "Player " + currentPlayer;
-    document.getElementById('message-box').innerText = turnTxt;
+    document.getElementById('p1-score').innerText = `P1: ${scores[1]}`;
+    document.getElementById('p2-score').innerText = `P2: ${scores[2]}`;
+    
+    // Highlight Turn
+    document.getElementById('p1-score').className = currentPlayer === 1 ? 'active-turn' : '';
+    document.getElementById('p2-score').className = currentPlayer === 2 ? 'active-turn' : '';
+    
+    document.getElementById('message-area').innerText = 
+        gameMode==='ai' && currentPlayer===2 ? "AI Thinking..." : `Player ${currentPlayer}'s Turn`;
 }
 
 function goToMenu() {
@@ -322,28 +394,27 @@ function openShop() {
     document.getElementById('shop').classList.remove('hidden');
     let list = document.getElementById('shop-list');
     list.innerHTML = '';
-    
-    skins.forEach(s => {
-        let isOwned = owned.includes(s.id);
+    skinData.forEach(s => {
+        let isOwned = ownedSkins.includes(s.id);
         let btn = document.createElement('div');
         btn.className = `shop-item ${isOwned ? 'owned' : ''}`;
         btn.innerHTML = `
-            <div style="width:30px;height:30px;border-radius:50%;background:${s.color};margin:auto;border:1px solid white"></div>
-            <h3>${s.name}</h3>
-            ${isOwned ? "OWNED" : "💰 " + s.price}
+            <div style="width:40px;height:40px;border-radius:50%;background:${s.color};margin:0 auto 10px;box-shadow:0 0 5px white;"></div>
+            <b>${s.name}</b><br>
+            ${isOwned ? "OWNED" : "💰 "+s.price}
         `;
         btn.onclick = () => {
             if(isOwned) {
                 currentSkin = s.color;
-                localStorage.setItem('c_skin', s.color);
+                localStorage.setItem('cm_skin', s.color);
                 alert("Equipped!");
             } else if(coins >= s.price) {
                 coins -= s.price;
-                owned.push(s.id);
-                localStorage.setItem('c_owned', JSON.stringify(owned));
-                localStorage.setItem('c_coins', coins);
-                updateUI();
-                openShop(); // Refresh
+                ownedSkins.push(s.id);
+                localStorage.setItem('cm_owned', JSON.stringify(ownedSkins));
+                localStorage.setItem('cm_coins', coins);
+                openShop(); // refresh
+                updateHUD();
             }
         };
         list.appendChild(btn);
