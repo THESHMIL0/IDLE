@@ -2,42 +2,130 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Carrom Master 3D</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Miner Idle</title>
+    <style>
+        /* CSS: Making it look like a mobile app */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            touch-action: manipulation; /* Prevents zooming on fast taps */
+        }
+
+        .stat-box {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #click-btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 8px solid #f1c40f;
+            background-color: #f39c12;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px #d35400;
+        }
+
+        #click-btn:active {
+            box-shadow: 0 5px #d35400;
+            transform: translateY(4px);
+        }
+
+        .upgrade-section {
+            margin-top: 40px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .upgrade-btn {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #34495e;
+            color: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .upgrade-btn:disabled {
+            opacity: 0.5;
+            background-color: #7f8c8d;
+        }
+    </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="menu" class="ui-layer">
-        <h1 class="title">CARROM<br>MASTER</h1>
-        <div class="stats-box">💰 Coins: <span id="menu-coins">0</span></div>
-        <button class="btn primary" onclick="startGame('ai')">🤖 VS COMPUTER</button>
-        <button class="btn secondary" onclick="startGame('pvp')">👥 2 PLAYER</button>
-        <button class="btn shop-btn" onclick="openShop()">🛒 SKINS & SHOP</button>
+    <div class="stat-box">
+        <div>Gold: <span id="gold-count">0</span></div>
+        <div style="font-size: 1rem;">Per Second: <span id="gps-count">0</span></div>
     </div>
 
-    <div id="shop" class="ui-layer hidden">
-        <h2>STRIKER SHOP</h2>
-        <div class="stats-box">Coins: <span id="shop-coins">0</span></div>
-        <div id="shop-list"></div>
-        <button class="btn secondary" onclick="closeShop()">BACK</button>
+    <button id="click-btn">MINE!</button>
+
+    <div class="upgrade-section">
+        <button id="buy-miner" class="upgrade-btn">
+            <span>Buy Auto-Miner</span>
+            <span id="miner-cost">10 Gold</span>
+        </button>
     </div>
 
-    <div id="hud" class="hidden">
-        <div class="top-bar">
-            <button class="icon-btn" onclick="goToMenu()">🏠</button>
-            <div id="score-board">
-                <span id="p1-score" class="active-turn">P1: 0</span>
-                <span id="p2-score">P2: 0</span>
-            </div>
-        </div>
-        <div id="message-area">Your Turn</div>
-    </div>
+    <script>
+        // JavaScript: Game Logic
+        let gold = 0;
+        let miners = 0;
+        let minerCost = 10;
 
-    <canvas id="canvas"></canvas>
-</div>
+        const goldDisplay = document.getElementById('gold-count');
+        const gpsDisplay = document.getElementById('gps-count');
+        const minerCostDisplay = document.getElementById('miner-cost');
+        const clickBtn = document.getElementById('click-btn');
+        const buyMinerBtn = document.getElementById('buy-miner');
 
-<script src="script.js"></script>
+        // 1. Manual Click Logic
+        clickBtn.addEventListener('click', () => {
+            gold++;
+            updateUI();
+        });
+
+        // 2. Upgrade Logic
+        buyMinerBtn.addEventListener('click', () => {
+            if (gold >= minerCost) {
+                gold -= minerCost;
+                miners++;
+                minerCost = Math.floor(minerCost * 1.15); // Increase cost by 15%
+                updateUI();
+            }
+        });
+
+        // 3. The Game Loop (Runs every second)
+        setInterval(() => {
+            gold += miners;
+            updateUI();
+        }, 1000);
+
+        // 4. UI Update Function
+        function updateUI() {
+            goldDisplay.innerText = Math.floor(gold);
+            gpsDisplay.innerText = miners;
+            minerCostDisplay.innerText = minerCost + " Gold";
+            
+            // Disable upgrade button if player can't afford it
+            buyMinerBtn.disabled = (gold < minerCost);
+        }
+    </script>
 </body>
 </html>
