@@ -2,89 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Miner Idle</title>
-    <style>
-        /* CSS: Making it look like a mobile app */
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #2c3e50;
-            color: #ecf0f1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            touch-action: manipulation; /* Prevents zooming on fast taps */
-        }
-
-        .stat-box {
-            font-size: 2rem;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        #click-btn {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            border: 8px solid #f1c40f;
-            background-color: #f39c12;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 10px #d35400;
-        }
-
-        #click-btn:active {
-            box-shadow: 0 5px #d35400;
-            transform: translateY(4px);
-        }
-
-        .upgrade-section {
-            margin-top: 40px;
-            width: 90%;
-            max-width: 400px;
-        }
-
-        .upgrade-btn {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 10px;
-            background-color: #34495e;
-            color: white;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .upgrade-btn:disabled {
-            opacity: 0.5;
-            background-color: #7f8c8d;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pixel Miner Mobile</title>
 </head>
 <body>
-
     <div class="stat-box">
         <div>Gold: <span id="gold-count">0</span></div>
-        <div style="font-size: 1rem;">Per Second: <span id="gps-count">0</span></div>
+        <div style="font-size: 1rem; color: #f1c40f;">+<span id="gps-count">0</span> / sec</div>
     </div>
 
-    <button id="click-btn">MINE!</button>
+    <div id="click-container" style="position: relative;">
+        <button id="click-btn">MINE!</button>
+    </div>
 
     <div class="upgrade-section">
         <button id="buy-miner" class="upgrade-btn">
             <span>Buy Auto-Miner</span>
-            <span id="miner-cost">10 Gold</span>
+            <span id="miner-cost" class="cost-tag">10 Gold</span>
         </button>
     </div>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #1a1a2e;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        overflow: hidden;
+        touch-action: manipulation;
+    }
 
+    .stat-box { text-align: center; margin-bottom: 30px; }
+    #gold-count { font-size: 3rem; font-weight: bold; color: #f1c40f; }
+
+    #click-btn {
+        width: 180px; height: 180px;
+        border-radius: 50%; border: none;
+        background: radial-gradient(#f39c12, #d35400);
+        color: white; font-size: 1.5rem; font-weight: bold;
+        box-shadow: 0 8px #a04000, 0 15px 20px rgba(0,0,0,0.4);
+        transition: transform 0.05s;
+    }
+
+    #click-btn:active { transform: scale(0.95); box-shadow: 0 2px #a04000; }
+
+    .upgrade-section { width: 85%; margin-top: 50px; }
+    .upgrade-btn {
+        width: 100%; padding: 18px; background: #16213e;
+        border: 1px solid #4ecca3; color: white; border-radius: 12px;
+        display: flex; justify-content: space-between; font-size: 1rem;
+    }
+
+    .upgrade-btn:disabled { opacity: 0.3; filter: grayscale(1); }
+
+    /* The Floating Animation */
+    .floating-text {
+        position: absolute;
+        color: #f1c40f;
+        font-weight: bold;
+        pointer-events: none;
+        animation: floatUp 0.8s ease-out forwards;
+        z-index: 10;
+    }
+
+    @keyframes floatUp {
+        0% { transform: translateY(0); opacity: 1; }
+        100% { transform: translateY(-100px); opacity: 0; }
+    }
+</style>
     <script>
-        // JavaScript: Game Logic
         let gold = 0;
         let miners = 0;
         let minerCost = 10;
@@ -92,40 +82,59 @@
         const goldDisplay = document.getElementById('gold-count');
         const gpsDisplay = document.getElementById('gps-count');
         const minerCostDisplay = document.getElementById('miner-cost');
-        const clickBtn = document.getElementById('click-btn');
         const buyMinerBtn = document.getElementById('buy-miner');
+        const clickContainer = document.getElementById('click-container');
 
-        // 1. Manual Click Logic
-        clickBtn.addEventListener('click', () => {
+        // Function to create floating text
+        function spawnText(amount) {
+            const text = document.createElement('div');
+            text.className = 'floating-text';
+            text.innerText = '+' + amount;
+            // Randomize position slightly
+            text.style.left = (Math.random() * 100 + 40) + 'px';
+            clickContainer.appendChild(text);
+            
+            setTimeout(() => text.remove(), 800);
+        }
+
+        document.getElementById('click-btn').addEventListener('click', (e) => {
             gold++;
+            spawnText(1);
             updateUI();
         });
 
-        // 2. Upgrade Logic
         buyMinerBtn.addEventListener('click', () => {
             if (gold >= minerCost) {
                 gold -= minerCost;
                 miners++;
-                minerCost = Math.floor(minerCost * 1.15); // Increase cost by 15%
+                minerCost = Math.floor(minerCost * 1.2);
                 updateUI();
+                saveGame();
             }
         });
 
-        // 3. The Game Loop (Runs every second)
-        setInterval(() => {
-            gold += miners;
-            updateUI();
-        }, 1000);
-
-        // 4. UI Update Function
         function updateUI() {
             goldDisplay.innerText = Math.floor(gold);
             gpsDisplay.innerText = miners;
             minerCostDisplay.innerText = minerCost + " Gold";
-            
-            // Disable upgrade button if player can't afford it
             buyMinerBtn.disabled = (gold < minerCost);
         }
+
+        function saveGame() {
+            localStorage.setItem("pixelMinerSave", JSON.stringify({gold, miners, minerCost}));
+        }
+
+        function loadGame() {
+            const data = JSON.parse(localStorage.getItem("pixelMinerSave"));
+            if (data) {
+                gold = data.gold; miners = data.miners; minerCost = data.minerCost;
+                updateUI();
+            }
+        }
+
+        setInterval(() => { gold += miners; updateUI(); }, 1000);
+        setInterval(saveGame, 15000); // Save every 15s
+        loadGame();
     </script>
 </body>
 </html>
