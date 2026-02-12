@@ -11,6 +11,7 @@
             --card-bg: #16213e;
             --accent: #4ecca3;
             --boss-color: #e74c3c;
+            --xp-color: #3498db;
         }
 
         body.light-mode {
@@ -35,211 +36,165 @@
             transition: 0.3s;
         }
 
-        .header { position: absolute; top: 15px; display: flex; gap: 10px; align-items: center; width: 90%; justify-content: space-between; }
-        #mine-name-display { font-size: 1rem; font-weight: bold; border-bottom: 2px dashed var(--accent); }
+        /* Progress Bar at Top */
+        #level-container {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 30px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            z-index: 100;
+        }
+        #xp-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--xp-color);
+            transition: width 0.3s;
+        }
+        #level-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
 
-        .stat-box { text-align: center; margin-bottom: 15px; }
-        #gold-count { font-size: 3rem; font-weight: bold; color: #f1c40f; line-height: 1; }
-        .prestige-text { color: #9b59b6; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; }
+        .header { position: absolute; top: 40px; display: flex; gap: 10px; align-items: center; width: 90%; justify-content: space-between; }
+        
+        .stat-box { text-align: center; margin-top: 50px; margin-bottom: 15px; }
+        #gold-count { font-size: 2.5rem; font-weight: bold; color: #f1c40f; }
 
-        #click-container { position: relative; margin-bottom: 15px; }
         #click-btn {
-            width: 140px; height: 140px;
+            width: 130px; height: 130px;
             border-radius: 50%; border: none;
             background: radial-gradient(#f39c12, #d35400);
-            color: white; font-size: 1.1rem; font-weight: bold;
+            color: white; font-size: 1rem; font-weight: bold;
             box-shadow: 0 8px #a04000;
             transition: transform 0.05s;
-            z-index: 10;
         }
-        #click-btn:active { transform: scale(0.92); box-shadow: 0 2px #a04000; }
-
-        /* Boss Mode Styling */
-        #click-btn.boss-active {
-            background: radial-gradient(#e74c3c, #c0392b);
-            box-shadow: 0 8px #922b21;
-            animation: shake 0.2s infinite;
-        }
+        #click-btn:active { transform: scale(0.92); }
+        #click-btn.boss-active { background: var(--boss-color); animation: shake 0.2s infinite; }
 
         @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            50% { transform: translate(-1px, -2px) rotate(-1deg); }
-            100% { transform: translate(1px, 1px) rotate(0deg); }
-        }
-
-        #boss-health-bar {
-            width: 100%; height: 10px; background: #333;
-            border-radius: 5px; margin-top: 10px; display: none;
-        }
-        #boss-health-fill {
-            width: 100%; height: 100%; background: var(--boss-color);
-            border-radius: 5px; transition: width 0.1s;
+            0% { transform: translate(1px, 1px); }
+            50% { transform: translate(-1px, -2px); }
+            100% { transform: translate(1px, 1px); }
         }
 
         .upgrade-section { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
         .upgrade-btn {
-            width: 100%; padding: 10px; background: var(--card-bg);
+            width: 100%; padding: 12px; background: var(--card-bg);
             border: 1px solid var(--accent); color: var(--text-color); border-radius: 10px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .upgrade-btn:disabled { opacity: 0.3; filter: grayscale(1); }
-        
-        .milestone-badge { font-size: 0.7rem; background: #e74c3c; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
-        .cost-tag { background: #0f3460; padding: 3px 8px; border-radius: 6px; color: #4ecca3; font-weight: bold; }
+        .cost-tag { background: #0f3460; padding: 3px 8px; border-radius: 6px; color: #4ecca3; }
 
         .floating-text {
             position: absolute; color: #f1c40f; font-weight: bold; pointer-events: none;
-            animation: floatUp 0.7s ease-out forwards; z-index: 100;
+            animation: floatUp 0.7s ease-out forwards; z-index: 1000;
         }
         @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
-
-        .mode-toggle { padding: 4px 10px; border-radius: 15px; border: 1px solid var(--accent); background: var(--card-bg); color: var(--text-color); font-size: 0.7rem; }
     </style>
 </head>
 <body class="dark-mode">
 
+    <div id="level-container">
+        <div id="xp-bar-fill"></div>
+        <div id="level-text">Level <span id="current-lvl">1</span> (<span id="xp-percent">0</span>%)</div>
+    </div>
+
     <div class="header">
-        <span id="mine-name-display" onclick="renameMine()">My Mine</span>
-        <button class="mode-toggle" onclick="toggleTheme()">🌓 Theme</button>
+        <span id="mine-name-display" onclick="renameMine()" style="border-bottom: 1px dashed var(--accent)">My Mine</span>
+        <button onclick="toggleTheme()" style="background:none; border: 1px solid var(--accent); color: var(--text-color); border-radius: 10px; padding: 2px 10px;">Theme</button>
     </div>
 
     <div class="stat-box">
-        <div class="prestige-text">Multiplier: x<span id="prestige-multi">1</span></div>
+        <div style="color: #9b59b6; font-size: 0.8rem;">Multiplier: x<span id="prestige-multi">1</span></div>
         <div>Gold: <span id="gold-count">0</span></div>
-        <div id="boss-timer" style="color: #e74c3c; font-weight: bold; display: none;">BOSS TIME!</div>
-        <div style="font-size: 1rem; color: #f1c40f;">+<span id="gps-count">0</span>/s</div>
+        <div style="font-size: 0.9rem; color: #f1c40f;">+<span id="gps-count">0</span>/s</div>
     </div>
 
-    <div id="click-container">
+    <div style="position: relative; margin-bottom: 20px;">
         <button id="click-btn">MINE!</button>
-        <div id="boss-health-bar"><div id="boss-health-fill"></div></div>
     </div>
 
     <div class="upgrade-section">
         <button id="buy-clicker" class="upgrade-btn">
-            <div>Pickaxe [Lvl <span id="clicker-lvl">1</span>] <span id="click-ms" class="milestone-badge" style="display:none">BONUS</span></div>
+            <span>Pickaxe (Lvl <span id="click-lvl">1</span>)</span>
             <span id="clicker-cost" class="cost-tag">15 G</span>
         </button>
-
         <button id="buy-miner" class="upgrade-btn">
-            <div>Miners [Lvl <span id="miner-lvl">0</span>] <span id="miner-ms" class="milestone-badge" style="display:none">BONUS</span></div>
+            <span>Miners (Lvl <span id="miner-lvl">0</span>)</span>
             <span id="miner-cost" class="cost-tag">10 G</span>
         </button>
-
-        <button id="prestige-btn" class="upgrade-btn" style="background:#4a148c; display:none;">
+        <button id="prestige-btn" class="upgrade-btn" style="background:#4a148c; display:none; color:white;">
             <span>ASCEND</span>
             <span class="cost-tag">+1 Multi</span>
         </button>
-        
         <button onclick="hardReset()" style="background:none; border:none; color:#777; font-size:10px; margin-top:5px;">Hard Reset Data</button>
     </div>
 
     <script>
+        // Data State
         let gold = 0, miners = 0, minerCost = 10;
         let clickValue = 1, clickerCost = 15, prestige = 1, clickerLvl = 1;
         let mineName = "My Mine", isDarkMode = true;
-
-        // Boss Variables
-        let isBossActive = false;
-        let bossHealth = 0;
-        let bossMaxHealth = 50;
-
-        const goldDisplay = document.getElementById('gold-count');
-        const gpsDisplay = document.getElementById('gps-count');
-        const clickBtn = document.getElementById('click-btn');
-        const healthFill = document.getElementById('boss-health-fill');
-
-        function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            document.body.className = isDarkMode ? "dark-mode" : "light-mode";
-            saveGame();
-        }
-
-        function renameMine() {
-            const n = prompt("Mine Name:", mineName);
-            if(n) { mineName = n; updateUI(); saveGame(); }
-        }
+        
+        // XP System
+        let playerLevel = 1;
+        let currentXP = 0;
+        let xpNeeded = 100;
 
         function updateUI() {
-            const minerBonus = Math.floor(miners / 10) + 1;
-            goldDisplay.innerText = Math.floor(gold);
-            gpsDisplay.innerText = (miners * prestige * minerBonus).toFixed(1);
-            document.getElementById('prestige-multi').innerText = prestige;
+            // Stats
+            document.getElementById('gold-count').innerText = Math.floor(gold);
+            const mBonus = Math.floor(miners / 10) + 1;
+            const lvlBonus = 1 + (playerLevel * 0.1); // 10% bonus per level
+            document.getElementById('gps-count').innerText = (miners * prestige * mBonus * lvlBonus).toFixed(1);
+            document.getElementById('prestige-multi').innerText = (prestige * lvlBonus).toFixed(1);
+            
+            // Costs & Levels
             document.getElementById('miner-cost').innerText = minerCost + " G";
             document.getElementById('clicker-cost').innerText = clickerCost + " G";
             document.getElementById('miner-lvl').innerText = miners;
-            document.getElementById('clicker-lvl').innerText = clickerLvl;
+            document.getElementById('click-lvl').innerText = clickerLvl;
             document.getElementById('mine-name-display').innerText = mineName;
-            
-            document.getElementById('miner-ms').style.display = miners >= 10 ? "inline" : "none";
-            document.getElementById('click-ms').style.display = clickerLvl >= 10 ? "inline" : "none";
-            
-            document.getElementById('buy-miner').disabled = (gold < minerCost) || isBossActive;
-            document.getElementById('buy-clicker').disabled = (gold < clickerCost) || isBossActive;
-            
-            document.getElementById('prestige-btn').style.display = (gold >= 1000 || prestige > 1) ? "flex" : "none";
-            document.getElementById('prestige-btn').disabled = (gold < 1000);
+
+            // XP Bar
+            const percent = (currentXP / xpNeeded) * 100;
+            document.getElementById('xp-bar-fill').style.width = percent + "%";
+            document.getElementById('current-lvl').innerText = playerLevel;
+            document.getElementById('xp-percent').innerText = Math.floor(percent);
+
+            // Buttons
+            document.getElementById('buy-miner').disabled = gold < minerCost;
+            document.getElementById('buy-clicker').disabled = gold < clickerCost;
+            document.getElementById('prestige-btn').style.display = gold >= 1000 ? "flex" : "none";
         }
 
-        // Logic for Clicking
-        clickBtn.addEventListener('click', (e) => {
-            if (isBossActive) {
-                bossHealth--;
-                let percent = (bossHealth / bossMaxHealth) * 100;
-                healthFill.style.width = percent + "%";
-                if (bossHealth <= 0) winBoss();
-            } else {
-                const bonus = Math.floor(clickerLvl / 10) + 1;
-                let gain = clickValue * prestige * bonus;
-                gold += gain;
-                spawnText(gain, e.clientX, e.clientY);
-                updateUI();
+        function gainXP(amt) {
+            currentXP += amt;
+            if (currentXP >= xpNeeded) {
+                currentXP -= xpNeeded;
+                playerLevel++;
+                xpNeeded = Math.floor(xpNeeded * 1.3);
+                spawnText("LEVEL UP!", window.innerWidth/2, 100, true);
             }
+        }
+
+        document.getElementById('click-btn').addEventListener('click', (e) => {
+            const cBonus = Math.floor(clickerLvl / 10) + 1;
+            const lvlBonus = 1 + (playerLevel * 0.1);
+            let gain = clickValue * prestige * cBonus * lvlBonus;
+            gold += gain;
+            gainXP(gain * 0.5); // Earn XP from clicks
+            spawnText(Math.floor(gain), e.clientX, e.clientY);
+            updateUI();
         });
 
-        // Boss Logic
-        function startBoss() {
-            isBossActive = true;
-            bossMaxHealth = 50 + (prestige * 20);
-            bossHealth = bossMaxHealth;
-            clickBtn.innerText = "BREAK IT!";
-            clickBtn.classList.add('boss-active');
-            document.getElementById('boss-health-bar').style.display = 'block';
-            document.getElementById('boss-timer').style.display = 'block';
-            healthFill.style.width = "100%";
-            updateUI();
-        }
-
-        function winBoss() {
-            isBossActive = false;
-            let reward = 500 * prestige;
-            gold += reward;
-            clickBtn.innerText = "MINE!";
-            clickBtn.classList.remove('boss-active');
-            document.getElementById('boss-health-bar').style.display = 'none';
-            document.getElementById('boss-timer').style.display = 'none';
-            spawnText("BOSS DEFEATED! +" + reward, window.innerWidth/2, window.innerHeight/2, true);
-            updateUI();
-            saveGame();
-        }
-
-        // Trigger Boss every 2 minutes
-        setInterval(() => {
-            if (!isBossActive) startBoss();
-        }, 120000);
-
-        function spawnText(amt, x, y, spec) {
-            const t = document.createElement('div');
-            t.className = 'floating-text';
-            if(spec) t.style.color = "#4ecca3";
-            t.innerText = isNaN(amt) ? amt : "+" + amt;
-            t.style.left = (x || window.innerWidth/2) + "px";
-            t.style.top = (y || window.innerHeight/2) + "px";
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 700);
-        }
-
-        // Standard Loops
         document.getElementById('buy-clicker').addEventListener('click', () => {
             if (gold >= clickerCost) {
                 gold -= clickerCost; clickerLvl++; clickValue++;
@@ -256,41 +211,54 @@
             }
         });
 
-        document.getElementById('prestige-btn').addEventListener('click', () => {
-            if (confirm("Ascend?")) {
-                prestige++; gold = 0; miners = 0; minerCost = 10;
-                clickValue = 1; clickerCost = 15; clickerLvl = 1;
-                saveGame(); updateUI();
-            }
-        });
+        function spawnText(amt, x, y, isSpec) {
+            const t = document.createElement('div');
+            t.className = 'floating-text';
+            if(isSpec) t.style.color = "#3498db";
+            t.innerText = isNaN(amt) ? amt : "+" + amt;
+            t.style.left = (x || 100) + "px";
+            t.style.top = (y || 100) + "px";
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 700);
+        }
 
-        setInterval(() => {
-            const minerBonus = Math.floor(miners / 10) + 1;
-            gold += (miners * prestige * minerBonus);
-            updateUI();
-        }, 1000);
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.className = isDarkMode ? "dark-mode" : "light-mode";
+            saveGame();
+        }
 
         function saveGame() {
-            const data = { gold, miners, minerCost, clickValue, clickerCost, prestige, mineName, isDarkMode, clickerLvl };
-            localStorage.setItem("pixelMinerV4", JSON.stringify(data));
+            const data = { gold, miners, minerCost, clickValue, clickerCost, prestige, mineName, isDarkMode, clickerLvl, playerLevel, currentXP, xpNeeded };
+            localStorage.setItem("pixelMinerV5", JSON.stringify(data));
         }
 
         function loadGame() {
-            const saved = localStorage.getItem("pixelMinerV4");
+            const saved = localStorage.getItem("pixelMinerV5");
             if(saved) {
                 const d = JSON.parse(saved);
                 gold = Number(d.gold) || 0; miners = Number(d.miners) || 0;
                 minerCost = Number(d.minerCost) || 10; clickValue = Number(d.clickValue) || 1;
                 clickerCost = Number(d.clickerCost) || 15; prestige = Number(d.prestige) || 1;
                 clickerLvl = Number(d.clickerLvl) || 1; mineName = d.mineName || "My Mine";
+                playerLevel = Number(d.playerLevel) || 1; currentXP = Number(d.currentXP) || 0;
+                xpNeeded = Number(d.xpNeeded) || 100;
                 isDarkMode = d.isDarkMode ?? true;
                 document.body.className = isDarkMode ? "dark-mode" : "light-mode";
             }
             updateUI();
         }
 
-        function hardReset() { if(confirm("Erase EVERYTHING?")) { localStorage.clear(); location.reload(); } }
+        setInterval(() => {
+            const mBonus = Math.floor(miners / 10) + 1;
+            const lvlBonus = 1 + (playerLevel * 0.1);
+            let passiveGain = miners * prestige * mBonus * lvlBonus;
+            gold += passiveGain;
+            if(passiveGain > 0) gainXP(passiveGain * 0.1); // Passive XP
+            updateUI();
+        }, 1000);
 
+        function hardReset() { if(confirm("Reset all?")) { localStorage.clear(); location.reload(); } }
         loadGame();
     </script>
 </body>
