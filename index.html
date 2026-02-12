@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pixel Miner Pro: Gear Edition</title>
+    <title>Pixel Miner Pro: Frenzy</title>
     <style>
         :root {
             --bg-color: #1a1a2e;
@@ -12,6 +12,7 @@
             --accent: #4ecca3;
             --xp-color: #3498db;
             --trophy-gold: #f1c40f;
+            --frenzy-color: #e84393;
         }
 
         body.light-mode {
@@ -51,23 +52,25 @@
 
         .stat-box { text-align: center; margin-top: 10px; }
         #gold-count { font-size: 2.5rem; font-weight: bold; color: var(--trophy-gold); }
-        .gear-title { font-size: 0.8rem; color: var(--accent); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        #frenzy-timer { color: var(--frenzy-color); font-weight: bold; font-size: 0.9rem; display: none; }
 
         #click-container { position: relative; margin: 15px 0; }
         #click-btn {
             width: 135px; height: 135px; border-radius: 50%; border: none;
             background: radial-gradient(#f39c12, #d35400); color: white;
             font-size: 1.1rem; font-weight: bold; box-shadow: 0 8px #a04000;
-            transition: transform 0.05s; z-index: 10;
+            transition: transform 0.05s;
         }
         #click-btn:active { transform: scale(0.92); }
 
-        .particle {
-            position: absolute; width: 6px; height: 6px;
-            background-color: var(--trophy-gold);
-            pointer-events: none; border-radius: 1px;
-            z-index: 1000;
+        /* Falling Gem Style */
+        .falling-gem {
+            position: absolute; width: 40px; height: 40px;
+            background: var(--xp-color); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            z-index: 200; box-shadow: 0 0 15px var(--xp-color);
+            animation: rotateGem 2s linear infinite;
         }
+        @keyframes rotateGem { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         .upgrade-section { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
         .upgrade-btn {
@@ -82,13 +85,6 @@
             animation: floatUp 0.7s ease-out forwards; z-index: 1001;
         }
         @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
-
-        #trophy-menu {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85%; max-width: 320px; background: var(--card-bg);
-            border: 2px solid var(--trophy-gold); border-radius: 15px;
-            padding: 20px; z-index: 2000; display: none; text-align: center;
-        }
     </style>
 </head>
 <body class="dark-mode">
@@ -100,21 +96,11 @@
 
     <div class="header">
         <span id="mine-name-display" onclick="renameMine()">My Mine</span>
-        <div style="display: flex; gap: 8px;">
-            <button onclick="toggleTrophy()" style="background:var(--trophy-gold); border:none; border-radius:10px; padding:6px 12px; font-weight:bold;">🏆</button>
-            <button onclick="toggleTheme()" style="background:var(--card-bg); border:1px solid var(--accent); color:var(--text-color); border-radius:10px; padding:6px 12px;">🌓</button>
-        </div>
-    </div>
-
-    <div id="trophy-menu">
-        <h2 style="color:var(--trophy-gold)">Achievements</h2>
-        <p>Lifetime Gold: <span id="stat-life-gold">0</span></p>
-        <p>Current Gear: <span id="stat-gear">Rusty Pickaxe</span></p>
-        <button onclick="toggleTrophy()" style="padding:10px 20px; background:var(--accent); border:none; border-radius:10px; color:white; font-weight:bold;">CLOSE</button>
+        <button onclick="toggleTheme()" style="background:var(--card-bg); border:1px solid var(--accent); color:var(--text-color); border-radius:10px; padding:6px 12px;">🌓</button>
     </div>
 
     <div class="stat-box">
-        <div class="gear-title" id="gear-name">Rusty Pickaxe</div>
+        <div id="frenzy-timer">FRENZY: <span id="frenzy-sec">10</span>s (2x Speed)</div>
         <div id="gold-count">0</div>
         <div style="font-size: 0.9rem; color: var(--trophy-gold);">+<span id="gps-count">0</span>/s</div>
     </div>
@@ -132,11 +118,7 @@
             <span>Hire Miner (Lvl <span id="miner-lvl">0</span>)</span>
             <span id="miner-cost" class="cost-tag">10 G</span>
         </button>
-        <button id="prestige-btn" class="upgrade-btn" style="background:#4a148c; display:none; color:white;">
-            <span>ASCEND (x<span id="prestige-multi">1</span>)</span>
-            <span class="cost-tag">+1 Multi</span>
-        </button>
-        <button onclick="hardReset()" style="color:#777; font-size:10px; border:none; background:none; margin-top:5px;">Wipe Data</button>
+        <button onclick="hardReset()" style="color:#777; font-size:10px; border:none; background:none; margin-top:10px;">Hard Reset Progress</button>
     </div>
 
     <script>
@@ -144,53 +126,92 @@
         let prestige = 1, clickerLvl = 1, mineName = "My Mine", isDarkMode = true;
         let playerLevel = 1, currentXP = 0, xpNeeded = 100, lifetimeGold = 0;
 
-        const gearStages = [
-            "Rusty Pickaxe", "Iron Chisel", "Steel Spade", "Heavy Sledge", 
-            "Jackhammer", "Steam Drill", "Diamond Pick", "Laser Cutter", "Plasma Beam"
-        ];
-
-        function createParticle(x, y) {
-            const p = document.createElement('div');
-            p.className = 'particle';
-            document.body.appendChild(p);
-            p.style.left = `${x}px`;
-            p.style.top = `${y}px`;
-
-            const destX = (Math.random() - 0.5) * 150;
-            const destY = (Math.random() - 0.5) * 150;
-
-            const anim = p.animate([
-                { transform: 'translate(0,0)', opacity: 1 },
-                { transform: `translate(${destX}px, ${destY}px)`, opacity: 0 }
-            ], { duration: 600, easing: 'ease-out' });
-            anim.onfinish = () => p.remove();
-        }
+        // Frenzy Logic
+        let frenzyActive = false;
+        let frenzyTime = 0;
 
         function updateUI() {
-            const currentGear = gearStages[Math.min(Math.floor(clickerLvl / 5), gearStages.length - 1)];
-            document.getElementById('gear-name').innerText = currentGear;
-            document.getElementById('stat-gear').innerText = currentGear;
+            const speed = frenzyActive ? 2 : 1;
             document.getElementById('gold-count').innerText = Math.floor(gold);
             
             const lvlBonus = 1 + (playerLevel * 0.1);
-            document.getElementById('gps-count').innerText = (miners * prestige * lvlBonus).toFixed(1);
-            document.getElementById('prestige-multi').innerText = prestige;
+            document.getElementById('gps-count').innerText = (miners * prestige * lvlBonus * speed).toFixed(1);
             
             document.getElementById('miner-cost').innerText = minerCost + " G";
             document.getElementById('clicker-cost').innerText = clickerCost + " G";
             document.getElementById('miner-lvl').innerText = miners;
             document.getElementById('click-lvl').innerText = clickerLvl;
             document.getElementById('mine-name-display').innerText = mineName;
-
-            const percent = Math.min((currentXP / xpNeeded) * 100, 100);
-            document.getElementById('xp-bar-fill').style.width = percent + "%";
             document.getElementById('current-lvl').innerText = playerLevel;
+            document.getElementById('xp-bar-fill').style.width = Math.min((currentXP/xpNeeded)*100, 100) + "%";
 
             document.getElementById('buy-miner').disabled = gold < minerCost;
             document.getElementById('buy-clicker').disabled = gold < clickerCost;
-            document.getElementById('prestige-btn').style.display = gold >= 1000 ? "flex" : "none";
-            document.getElementById('stat-life-gold').innerText = Math.floor(lifetimeGold);
+
+            document.getElementById('frenzy-timer').style.display = frenzyActive ? 'block' : 'none';
+            document.getElementById('frenzy-sec').innerText = frenzyTime;
         }
+
+        // --- MINIGAME: FALLING GEM ---
+        function spawnFallingGem() {
+            const gem = document.createElement('div');
+            gem.className = 'falling-gem';
+            gem.style.left = Math.random() * (window.innerWidth - 40) + "px";
+            gem.style.top = "-50px";
+            document.body.appendChild(gem);
+
+            let top = -50;
+            const fallInterval = setInterval(() => {
+                top += 4;
+                gem.style.top = top + "px";
+
+                if (top > window.innerHeight) {
+                    clearInterval(fallInterval);
+                    gem.remove();
+                }
+            }, 10);
+
+            gem.addEventListener('touchstart', () => {
+                clearInterval(fallInterval);
+                gem.remove();
+                startFrenzy();
+            });
+            gem.addEventListener('mousedown', () => { // For PC testing
+                clearInterval(fallInterval);
+                gem.remove();
+                startFrenzy();
+            });
+        }
+
+        function startFrenzy() {
+            frenzyActive = true;
+            frenzyTime = 10;
+            spawnText("FRENZY!", window.innerWidth/2, window.innerHeight/2);
+            updateUI();
+        }
+
+        setInterval(() => {
+            if (frenzyActive) {
+                frenzyTime--;
+                if (frenzyTime <= 0) frenzyActive = false;
+                updateUI();
+            }
+        }, 1000);
+
+        setInterval(() => {
+            if (Math.random() > 0.7) spawnFallingGem();
+        }, 20000); // Check every 20 seconds
+
+        // --- INPUT LOGIC ---
+        document.getElementById('click-btn').addEventListener('click', (e) => {
+            const speed = frenzyActive ? 2 : 1;
+            const lvlBonus = 1 + (playerLevel * 0.1);
+            let gain = clickValue * prestige * lvlBonus * speed;
+            gold += gain; lifetimeGold += gain;
+            gainXP(gain * 0.5);
+            spawnText(Math.floor(gain), e.clientX, e.clientY);
+            updateUI();
+        });
 
         function gainXP(amt) {
             currentXP += amt;
@@ -198,24 +219,14 @@
                 currentXP -= xpNeeded; playerLevel++;
                 xpNeeded = Math.floor(xpNeeded * 1.4);
             }
-            updateUI();
         }
-
-        document.getElementById('click-btn').addEventListener('click', (e) => {
-            const lvlBonus = 1 + (playerLevel * 0.1);
-            let gain = clickValue * prestige * lvlBonus;
-            gold += gain; lifetimeGold += gain;
-            gainXP(gain * 0.5);
-            spawnText(Math.floor(gain), e.clientX, e.clientY);
-            for(let i=0; i<4; i++) createParticle(e.clientX, e.clientY);
-            updateUI();
-        });
 
         function spawnText(amt, x, y) {
             const t = document.createElement('div');
             t.className = 'floating-text';
-            t.innerText = "+" + amt;
-            t.style.left = `${x}px`; t.style.top = `${y}px`;
+            t.innerText = isNaN(amt) ? amt : "+" + amt;
+            t.style.left = `${x || window.innerWidth/2}px`;
+            t.style.top = `${y || window.innerHeight/2}px`;
             document.body.appendChild(t);
             setTimeout(() => t.remove(), 700);
         }
@@ -224,7 +235,7 @@
             if (gold >= clickerCost) {
                 gold -= clickerCost; clickerLvl++; clickValue += 1.5;
                 clickerCost = Math.floor(clickerCost * 1.5);
-                updateUI(); saveGame();
+                updateUI();
             }
         });
 
@@ -232,58 +243,24 @@
             if (gold >= minerCost) {
                 gold -= minerCost; miners++;
                 minerCost = Math.floor(minerCost * 1.2);
-                updateUI(); saveGame();
+                updateUI();
             }
         });
-
-        document.getElementById('prestige-btn').addEventListener('click', () => {
-            if (confirm("Reset for Multiplier?")) {
-                prestige++; gold = 0; miners = 0; minerCost = 10;
-                clickValue = 1; clickerCost = 15; clickerLvl = 1;
-                saveGame(); updateUI();
-            }
-        });
-
-        function toggleTrophy() {
-            const m = document.getElementById('trophy-menu');
-            m.style.display = m.style.display === 'block' ? 'none' : 'block';
-        }
 
         function toggleTheme() {
             isDarkMode = !isDarkMode;
             document.body.className = isDarkMode ? "dark-mode" : "light-mode";
-            saveGame();
         }
 
         function renameMine() {
             const n = prompt("Mine Name:", mineName);
-            if(n) { mineName = n; updateUI(); saveGame(); }
-        }
-
-        function saveGame() {
-            const data = { gold, miners, minerCost, clickValue, clickerCost, prestige, mineName, isDarkMode, clickerLvl, playerLevel, currentXP, xpNeeded, lifetimeGold };
-            localStorage.setItem("pixelMinerV9", JSON.stringify(data));
-        }
-
-        function loadGame() {
-            const saved = localStorage.getItem("pixelMinerV9");
-            if(saved) {
-                const d = JSON.parse(saved);
-                gold = Number(d.gold) || 0; miners = Number(d.miners) || 0;
-                minerCost = Number(d.minerCost) || 10; clickValue = Number(d.clickValue) || 1;
-                clickerCost = Number(d.clickerCost) || 15; prestige = Number(d.prestige) || 1;
-                clickerLvl = Number(d.clickerLvl) || 1; mineName = d.mineName || "My Mine";
-                playerLevel = Number(d.playerLevel) || 1; currentXP = Number(d.currentXP) || 0;
-                xpNeeded = Number(d.xpNeeded) || 100; lifetimeGold = Number(d.lifetimeGold) || 0;
-                isDarkMode = d.isDarkMode ?? true;
-                document.body.className = isDarkMode ? "dark-mode" : "light-mode";
-            }
-            updateUI();
+            if(n) { mineName = n; updateUI(); }
         }
 
         setInterval(() => {
+            const speed = frenzyActive ? 2 : 1;
             const lvlBonus = 1 + (playerLevel * 0.1);
-            let pGain = miners * prestige * lvlBonus;
+            let pGain = miners * prestige * lvlBonus * speed;
             if (pGain > 0) {
                 gold += pGain; lifetimeGold += pGain;
                 gainXP(pGain * 0.1);
@@ -291,8 +268,8 @@
             updateUI();
         }, 1000);
 
-        function hardReset() { if(confirm("Reset All?")) { localStorage.clear(); location.reload(); } }
-        loadGame();
+        function hardReset() { if(confirm("Reset?")) { localStorage.clear(); location.reload(); } }
+        updateUI();
     </script>
 </body>
 </html>
