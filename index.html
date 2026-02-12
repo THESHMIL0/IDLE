@@ -19,11 +19,11 @@
             touch-action: manipulation;
         }
 
-        .stat-box { text-align: center; margin-bottom: 20px; }
+        .stat-box { text-align: center; margin-bottom: 20px; z-index: 5; }
         #gold-count { font-size: 2.5rem; font-weight: bold; color: #f1c40f; }
         .prestige-text { color: #9b59b6; font-size: 0.9rem; font-weight: bold; }
 
-        #click-container { position: relative; margin-bottom: 20px; }
+        #click-container { position: relative; margin-bottom: 20px; z-index: 5; }
         #click-btn {
             width: 160px; height: 160px;
             border-radius: 50%; border: none;
@@ -34,7 +34,7 @@
         }
         #click-btn:active { transform: scale(0.95); box-shadow: 0 2px #a04000; }
 
-        .upgrade-section { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
+        .upgrade-section { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; z-index: 5; }
         .upgrade-btn {
             width: 100%; padding: 12px; background: #16213e;
             border: 1px solid #4ecca3; color: white; border-radius: 8px;
@@ -42,12 +42,10 @@
         }
         .upgrade-btn:disabled { opacity: 0.3; filter: grayscale(1); }
         
-        #prestige-btn {
-            background: #4a148c; border: 1px solid #9b59b6; display: none;
-        }
-
+        #prestige-btn { background: #4a148c; border: 1px solid #9b59b6; display: none; }
         .cost-tag { background: #0f3460; padding: 2px 8px; border-radius: 4px; color: #4ecca3; }
 
+        /* Floating Text Animation */
         .floating-text {
             position: absolute; color: #f1c40f; font-weight: bold;
             pointer-events: none; animation: floatUp 0.8s ease-out forwards;
@@ -56,9 +54,30 @@
             0% { transform: translateY(0); opacity: 1; }
             100% { transform: translateY(-100px); opacity: 0; }
         }
+
+        /* Lucky Nugget Style */
+        #lucky-nugget {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #f1c40f;
+            border: 4px solid #fff;
+            border-radius: 50%;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 0 20px #f1c40f;
+            cursor: pointer;
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.2); }
+        }
     </style>
 </head>
 <body>
+
+    <div id="lucky-nugget"></div>
 
     <div class="stat-box">
         <div class="prestige-text">Multi: x<span id="prestige-multi">1</span></div>
@@ -82,7 +101,7 @@
         </button>
 
         <button id="prestige-btn" class="upgrade-btn">
-            <span>ASCEND (Reset)</span>
+            <span>ASCEND</span>
             <span class="cost-tag">+1 Multi</span>
         </button>
         
@@ -90,7 +109,6 @@
     </div>
 
     <script>
-        // --- INITIAL STATE ---
         let gold = 0;
         let miners = 0;
         let minerCost = 10;
@@ -107,9 +125,9 @@
         const buyClickerBtn = document.getElementById('buy-clicker');
         const prestigeBtn = document.getElementById('prestige-btn');
         const clickContainer = document.getElementById('click-container');
+        const luckyNugget = document.getElementById('lucky-nugget');
 
         function updateUI() {
-            // Fix NaN issues by ensuring numbers aren't null
             goldDisplay.innerText = Math.floor(gold || 0);
             gpsDisplay.innerText = ((miners || 0) * (prestige || 1)).toFixed(1);
             multiDisplay.innerText = prestige || 1;
@@ -118,26 +136,51 @@
             
             buyMinerBtn.disabled = (gold < minerCost);
             buyClickerBtn.disabled = (gold < clickerCost);
-
             prestigeBtn.style.display = (gold >= 1000 || prestige > 1) ? "flex" : "none";
             prestigeBtn.disabled = (gold < 1000);
         }
 
-        function spawnText(amount) {
+        function spawnText(amount, x, y, isBonus = false) {
             const text = document.createElement('div');
             text.className = 'floating-text';
+            if (isBonus) text.style.color = "#4ecca3";
             text.innerText = '+' + amount;
-            text.style.left = Math.random() * 80 + '%';
+            text.style.left = x || (Math.random() * 80 + '%');
+            text.style.top = y || '50%';
             clickContainer.appendChild(text);
             setTimeout(() => text.remove(), 800);
         }
 
+        // Main Mining Click
         document.getElementById('click-btn').addEventListener('click', () => {
             let totalGain = (clickValue || 1) * (prestige || 1);
             gold += totalGain;
             spawnText(totalGain);
             updateUI();
         });
+
+        // Lucky Nugget Click
+        luckyNugget.addEventListener('click', () => {
+            let bonus = Math.floor(((miners * prestige) * 30) + 50);
+            gold += bonus;
+            spawnText("LUCKY: " + bonus, "50%", "50%", true);
+            luckyNugget.style.display = 'none';
+            updateUI();
+        });
+
+        // Lucky Nugget Spawner Loop
+        setInterval(() => {
+            if (Math.random() > 0.7) { // 30% chance every 10s
+                const x = Math.random() * (window.innerWidth - 60);
+                const y = Math.random() * (window.innerHeight - 60);
+                luckyNugget.style.left = x + 'px';
+                luckyNugget.style.top = y + 'px';
+                luckyNugget.style.display = 'block';
+                
+                // Disappear after 4 seconds
+                setTimeout(() => { luckyNugget.style.display = 'none'; }, 4000);
+            }
+        }, 10000);
 
         buyClickerBtn.addEventListener('click', () => {
             if (gold >= clickerCost) {
@@ -160,7 +203,7 @@
         });
 
         prestigeBtn.addEventListener('click', () => {
-            if (confirm("Ascend? Reset gold/upgrades for +1x Multiplier!")) {
+            if (confirm("Ascend for +1x Multiplier?")) {
                 prestige = (prestige || 1) + 1;
                 gold = 0; miners = 0; minerCost = 10;
                 clickValue = 1; clickerCost = 15;
@@ -179,7 +222,6 @@
                 const saved = localStorage.getItem("pixelMinerSave");
                 if (saved) {
                     const data = JSON.parse(saved);
-                    // Use logical OR to provide defaults if values are missing/NaN
                     gold = Number.isFinite(data.gold) ? data.gold : 0;
                     miners = Number.isFinite(data.miners) ? data.miners : 0;
                     minerCost = Number.isFinite(data.minerCost) ? data.minerCost : 10;
@@ -187,14 +229,12 @@
                     clickerCost = Number.isFinite(data.clickerCost) ? data.clickerCost : 15;
                     prestige = Number.isFinite(data.prestige) ? data.prestige : 1;
                 }
-            } catch (e) {
-                console.log("Save corrupted, using defaults");
-            }
+            } catch (e) { console.log("Save error"); }
             updateUI();
         }
 
         function hardReset() {
-            if(confirm("Delete ALL progress forever?")) {
+            if(confirm("Wipe all data?")) {
                 localStorage.clear();
                 location.reload();
             }
