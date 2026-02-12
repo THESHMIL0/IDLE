@@ -3,272 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pixel Miner Pro: Frenzy</title>
+    <title>Pixel Miner: Mega Update</title>
     <style>
         :root {
-            --bg-color: #1a1a2e;
+            --bg-color: #0f0c29;
             --text-color: #ffffff;
-            --card-bg: #16213e;
-            --accent: #4ecca3;
-            --xp-color: #3498db;
-            --trophy-gold: #f1c40f;
-            --frenzy-color: #e84393;
-        }
-
-        body.light-mode {
-            --bg-color: #f0f2f5;
-            --text-color: #1a1a2e;
-            --card-bg: #ffffff;
-            --accent: #2ecc71;
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --accent: #00d2ff;
+            --gold: #f1c40f;
+            --btn-skin: radial-gradient(#f39c12, #d35400);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
             color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            touch-action: manipulation;
-            transition: 0.3s;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; touch-action: manipulation; transition: 0.5s;
         }
 
-        #level-container {
-            position: fixed; top: 0; width: 100%; height: 25px;
-            background: #333; display: flex; align-items: center; z-index: 50;
+        /* News Ticker */
+        #news-ticker {
+            width: 100%; background: rgba(0,0,0,0.5); font-size: 0.7rem;
+            padding: 5px 0; overflow: hidden; white-space: nowrap; margin-top: 25px;
         }
-        #xp-bar-fill { height: 100%; width: 0%; background: var(--xp-color); transition: width 0.3s; }
-        #level-text { position: absolute; width: 100%; text-align: center; font-size: 0.75rem; font-weight: bold; color: white; }
+        #news-content { display: inline-block; animation: scrollText 15s linear infinite; }
+        @keyframes scrollText { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
 
-        .header { 
-            margin-top: 35px; display: flex; width: 90%; justify-content: space-between; align-items: center; z-index: 100;
-        }
+        /* Level Bar */
+        #xp-container { position: fixed; top: 0; width: 100%; height: 25px; background: #222; z-index: 1000; }
+        #xp-bar { height: 100%; width: 0%; background: var(--accent); transition: 0.3s; box-shadow: 0 0 10px var(--accent); }
+
+        .stat-group { text-align: center; margin: 10px 0; }
+        #gold-display { font-size: 3rem; font-weight: bold; color: var(--gold); text-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
         
-        #mine-name-display { font-size: 1rem; font-weight: bold; border-bottom: 1px dashed var(--accent); }
+        /* Combo Meter */
+        #combo-meter { font-size: 0.8rem; color: #ff7675; opacity: 0; transition: 0.3s; }
 
-        .stat-box { text-align: center; margin-top: 10px; }
-        #gold-count { font-size: 2.5rem; font-weight: bold; color: var(--trophy-gold); }
-        #frenzy-timer { color: var(--frenzy-color); font-weight: bold; font-size: 0.9rem; display: none; }
-
-        #click-container { position: relative; margin: 15px 0; }
-        #click-btn {
-            width: 135px; height: 135px; border-radius: 50%; border: none;
-            background: radial-gradient(#f39c12, #d35400); color: white;
-            font-size: 1.1rem; font-weight: bold; box-shadow: 0 8px #a04000;
-            transition: transform 0.05s;
+        /* The Button */
+        #mine-btn {
+            width: 150px; height: 150px; border-radius: 50%; border: 4px solid #fff;
+            background: var(--btn-skin); color: #fff; font-size: 1.2rem; font-weight: bold;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.1s; cursor: pointer;
         }
-        #click-btn:active { transform: scale(0.92); }
+        #mine-btn:active { transform: scale(0.9); box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
 
-        /* Falling Gem Style */
-        .falling-gem {
-            position: absolute; width: 40px; height: 40px;
-            background: var(--xp-color); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-            z-index: 200; box-shadow: 0 0 15px var(--xp-color);
-            animation: rotateGem 2s linear infinite;
+        /* Upgrade Area (Scrollable for mobile) */
+        .shop-container {
+            width: 95%; flex-grow: 1; overflow-y: auto; 
+            padding: 10px 0; display: flex; flex-direction: column; gap: 10px;
         }
-        @keyframes rotateGem { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .item {
+            background: var(--card-bg); border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .item-info b { display: block; font-size: 1rem; }
+        .item-info span { font-size: 0.75rem; color: #ccc; }
+        .buy-btn { background: var(--accent); border: none; padding: 8px 15px; border-radius: 8px; color: #000; font-weight: bold; }
+        .buy-btn:disabled { background: #555; color: #888; }
 
-        .upgrade-section { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
-        .upgrade-btn {
-            width: 100%; padding: 12px; background: var(--card-bg);
-            border: 1px solid var(--accent); color: var(--text-color); border-radius: 10px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .cost-tag { background: #0f3460; padding: 3px 8px; border-radius: 6px; color: #4ecca3; font-weight: bold; }
-
-        .floating-text {
-            position: absolute; color: var(--trophy-gold); font-weight: bold; pointer-events: none;
-            animation: floatUp 0.7s ease-out forwards; z-index: 1001;
-        }
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
+        /* Floating Items */
+        .float-txt { position: absolute; pointer-events: none; animation: floatUp 0.8s ease-out forwards; font-weight: bold; z-index: 2000; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
     </style>
 </head>
-<body class="dark-mode">
+<body>
 
-    <div id="level-container">
-        <div id="xp-bar-fill"></div>
-        <div id="level-text">Level <span id="current-lvl">1</span></div>
+    <div id="xp-container"><div id="xp-bar"></div></div>
+
+    <div id="news-ticker"><div id="news-content">BREAKING: Local Miner Finds Golden Potato... Shares skyrocketed...</div></div>
+
+    <div class="stat-group">
+        <div id="combo-meter">COMBO X1.0</div>
+        <div id="gold-display">0</div>
+        <div style="color: var(--accent); font-size: 0.9rem;">+<span id="gps">0</span>/s</div>
     </div>
 
-    <div class="header">
-        <span id="mine-name-display" onclick="renameMine()">My Mine</span>
-        <button onclick="toggleTheme()" style="background:var(--card-bg); border:1px solid var(--accent); color:var(--text-color); border-radius:10px; padding:6px 12px;">🌓</button>
-    </div>
+    <button id="mine-btn">MINE!</button>
 
-    <div class="stat-box">
-        <div id="frenzy-timer">FRENZY: <span id="frenzy-sec">10</span>s (2x Speed)</div>
-        <div id="gold-count">0</div>
-        <div style="font-size: 0.9rem; color: var(--trophy-gold);">+<span id="gps-count">0</span>/s</div>
-    </div>
-
-    <div id="click-container">
-        <button id="click-btn">MINE!</button>
-    </div>
-
-    <div class="upgrade-section">
-        <button id="buy-clicker" class="upgrade-btn">
-            <span>Upgrade Tool (Lvl <span id="click-lvl">1</span>)</span>
-            <span id="clicker-cost" class="cost-tag">15 G</span>
-        </button>
-        <button id="buy-miner" class="upgrade-btn">
-            <span>Hire Miner (Lvl <span id="miner-lvl">0</span>)</span>
-            <span id="miner-cost" class="cost-tag">10 G</span>
-        </button>
-        <button onclick="hardReset()" style="color:#777; font-size:10px; border:none; background:none; margin-top:10px;">Hard Reset Progress</button>
+    <div class="shop-container">
+        <div class="item">
+            <div class="item-info"><b>Reinforced Pickaxe</b><span id="p-lvl">Lvl 1</span></div>
+            <button class="buy-btn" onclick="buyUpgrade('click')"><span id="p-cost">15</span> G</button>
+        </div>
+        <div class="item">
+            <div class="item-info"><b>Auto-Bot</b><span id="m-lvl">Lvl 0</span></div>
+            <button class="buy-btn" onclick="buyUpgrade('miner')"><span id="m-cost">50</span> G</button>
+        </div>
+        <div class="item">
+            <div class="item-info"><b>Button Skin: Neon</b><span>Cost: 500 G</span></div>
+            <button class="buy-btn" onclick="changeSkin('linear-gradient(#00d2ff, #3a7bd5)')">BUY</button>
+        </div>
     </div>
 
     <script>
-        let gold = 0, miners = 0, minerCost = 10, clickValue = 1, clickerCost = 15;
-        let prestige = 1, clickerLvl = 1, mineName = "My Mine", isDarkMode = true;
-        let playerLevel = 1, currentXP = 0, xpNeeded = 100, lifetimeGold = 0;
+        // --- DATA ---
+        let gold = 0, gps = 0, clickPower = 1;
+        let pLvl = 1, pCost = 15;
+        let mLvl = 0, mCost = 50;
+        let xp = 0, nextXp = 100, lvl = 1;
+        let combo = 1, comboTimer;
+        
+        const news = [
+            "Local miner discovers gold in a sandwich.",
+            "Goblins protest against auto-miners.",
+            "Gold prices hit an all-time high!",
+            "New: Diamond pickaxes actually made of glass?",
+            "Breaking: Clicking too fast causes finger-glow."
+        ];
 
-        // Frenzy Logic
-        let frenzyActive = false;
-        let frenzyTime = 0;
+        // --- CORE LOGIC ---
+        const mineBtn = document.getElementById('mine-btn');
+
+        mineBtn.onclick = (e) => {
+            // Combo System
+            combo += 0.01;
+            document.getElementById('combo-meter').style.opacity = 1;
+            document.getElementById('combo-meter').innerText = `COMBO X${combo.toFixed(1)}`;
+            clearTimeout(comboTimer);
+            comboTimer = setTimeout(() => { combo = 1; document.getElementById('combo-meter').style.opacity = 0; }, 2000);
+
+            // Gold Logic
+            let gain = clickPower * combo;
+            if (Math.random() < 0.05) { gain *= 5; spawnText("CRIT!", e.pageX, e.pageY, "#e74c3c"); }
+            
+            addGold(gain);
+            spawnText(`+${gain.toFixed(1)}`, e.pageX, e.pageY);
+            
+            // Haptic Feedback
+            if (navigator.vibrate) navigator.vibrate(20);
+        };
+
+        function addGold(amt) {
+            gold += amt;
+            xp += amt * 0.5;
+            if (xp >= nextXp) levelUp();
+            updateUI();
+        }
+
+        function levelUp() {
+            lvl++;
+            xp = 0;
+            nextXp *= 1.5;
+            addGold(lvl * 100);
+            spawnText("LEVEL UP!", window.innerWidth/2, window.innerHeight/2, "#00d2ff");
+        }
+
+        function buyUpgrade(type) {
+            if (type === 'click' && gold >= pCost) {
+                gold -= pCost; pLvl++; clickPower += 2; pCost *= 1.6;
+            } else if (type === 'miner' && gold >= mCost) {
+                gold -= mCost; mLvl++; gps += 1.5; mCost *= 1.3;
+            }
+            updateUI();
+        }
 
         function updateUI() {
-            const speed = frenzyActive ? 2 : 1;
-            document.getElementById('gold-count').innerText = Math.floor(gold);
-            
-            const lvlBonus = 1 + (playerLevel * 0.1);
-            document.getElementById('gps-count').innerText = (miners * prestige * lvlBonus * speed).toFixed(1);
-            
-            document.getElementById('miner-cost').innerText = minerCost + " G";
-            document.getElementById('clicker-cost').innerText = clickerCost + " G";
-            document.getElementById('miner-lvl').innerText = miners;
-            document.getElementById('click-lvl').innerText = clickerLvl;
-            document.getElementById('mine-name-display').innerText = mineName;
-            document.getElementById('current-lvl').innerText = playerLevel;
-            document.getElementById('xp-bar-fill').style.width = Math.min((currentXP/xpNeeded)*100, 100) + "%";
-
-            document.getElementById('buy-miner').disabled = gold < minerCost;
-            document.getElementById('buy-clicker').disabled = gold < clickerCost;
-
-            document.getElementById('frenzy-timer').style.display = frenzyActive ? 'block' : 'none';
-            document.getElementById('frenzy-sec').innerText = frenzyTime;
+            document.getElementById('gold-display').innerText = Math.floor(gold);
+            document.getElementById('gps').innerText = gps.toFixed(1);
+            document.getElementById('p-lvl').innerText = `Lvl ${pLvl}`;
+            document.getElementById('p-cost').innerText = Math.floor(pCost);
+            document.getElementById('m-lvl').innerText = `Lvl ${mLvl}`;
+            document.getElementById('m-cost').innerText = Math.floor(mCost);
+            document.getElementById('xp-bar').style.width = `${(xp/nextXp)*100}%`;
         }
 
-        // --- MINIGAME: FALLING GEM ---
-        function spawnFallingGem() {
-            const gem = document.createElement('div');
-            gem.className = 'falling-gem';
-            gem.style.left = Math.random() * (window.innerWidth - 40) + "px";
-            gem.style.top = "-50px";
-            document.body.appendChild(gem);
-
-            let top = -50;
-            const fallInterval = setInterval(() => {
-                top += 4;
-                gem.style.top = top + "px";
-
-                if (top > window.innerHeight) {
-                    clearInterval(fallInterval);
-                    gem.remove();
-                }
-            }, 10);
-
-            gem.addEventListener('touchstart', () => {
-                clearInterval(fallInterval);
-                gem.remove();
-                startFrenzy();
-            });
-            gem.addEventListener('mousedown', () => { // For PC testing
-                clearInterval(fallInterval);
-                gem.remove();
-                startFrenzy();
-            });
+        function spawnText(txt, x, y, color = "#f1c40f") {
+            const el = document.createElement('div');
+            el.className = 'float-txt';
+            el.innerText = txt;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
         }
 
-        function startFrenzy() {
-            frenzyActive = true;
-            frenzyTime = 10;
-            spawnText("FRENZY!", window.innerWidth/2, window.innerHeight/2);
-            updateUI();
-        }
-
-        setInterval(() => {
-            if (frenzyActive) {
-                frenzyTime--;
-                if (frenzyTime <= 0) frenzyActive = false;
+        function changeSkin(skin) {
+            if (gold >= 500) {
+                gold -= 500;
+                document.documentElement.style.setProperty('--btn-skin', skin);
                 updateUI();
             }
-        }, 1000);
+        }
 
+        // --- LOOPS ---
+        setInterval(() => { if (gps > 0) addGold(gps / 10); }, 100); // 10 ticks per second
+        
         setInterval(() => {
-            if (Math.random() > 0.7) spawnFallingGem();
-        }, 20000); // Check every 20 seconds
+            const content = document.getElementById('news-content');
+            content.innerText = news[Math.floor(Math.random() * news.length)];
+        }, 15000);
 
-        // --- INPUT LOGIC ---
-        document.getElementById('click-btn').addEventListener('click', (e) => {
-            const speed = frenzyActive ? 2 : 1;
-            const lvlBonus = 1 + (playerLevel * 0.1);
-            let gain = clickValue * prestige * lvlBonus * speed;
-            gold += gain; lifetimeGold += gain;
-            gainXP(gain * 0.5);
-            spawnText(Math.floor(gain), e.clientX, e.clientY);
-            updateUI();
-        });
+        // Shake to mine
+        let lastX, lastY, lastZ;
+        window.ondevicemotion = (e) => {
+            let acc = e.accelerationIncludingGravity;
+            if (Math.abs(acc.x - lastX) > 15) addGold(clickPower);
+            lastX = acc.x;
+        };
 
-        function gainXP(amt) {
-            currentXP += amt;
-            while (currentXP >= xpNeeded) {
-                currentXP -= xpNeeded; playerLevel++;
-                xpNeeded = Math.floor(xpNeeded * 1.4);
-            }
-        }
-
-        function spawnText(amt, x, y) {
-            const t = document.createElement('div');
-            t.className = 'floating-text';
-            t.innerText = isNaN(amt) ? amt : "+" + amt;
-            t.style.left = `${x || window.innerWidth/2}px`;
-            t.style.top = `${y || window.innerHeight/2}px`;
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 700);
-        }
-
-        document.getElementById('buy-clicker').addEventListener('click', () => {
-            if (gold >= clickerCost) {
-                gold -= clickerCost; clickerLvl++; clickValue += 1.5;
-                clickerCost = Math.floor(clickerCost * 1.5);
-                updateUI();
-            }
-        });
-
-        document.getElementById('buy-miner').addEventListener('click', () => {
-            if (gold >= minerCost) {
-                gold -= minerCost; miners++;
-                minerCost = Math.floor(minerCost * 1.2);
-                updateUI();
-            }
-        });
-
-        function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            document.body.className = isDarkMode ? "dark-mode" : "light-mode";
-        }
-
-        function renameMine() {
-            const n = prompt("Mine Name:", mineName);
-            if(n) { mineName = n; updateUI(); }
-        }
-
-        setInterval(() => {
-            const speed = frenzyActive ? 2 : 1;
-            const lvlBonus = 1 + (playerLevel * 0.1);
-            let pGain = miners * prestige * lvlBonus * speed;
-            if (pGain > 0) {
-                gold += pGain; lifetimeGold += pGain;
-                gainXP(pGain * 0.1);
-            }
-            updateUI();
-        }, 1000);
-
-        function hardReset() { if(confirm("Reset?")) { localStorage.clear(); location.reload(); } }
         updateUI();
     </script>
 </body>
