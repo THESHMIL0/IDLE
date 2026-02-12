@@ -73,30 +73,31 @@
     <div class="upgrade-section">
         <button id="buy-clicker" class="upgrade-btn">
             <span>Upgrade Pickaxe</span>
-            <span id="clicker-cost" class="cost-tag">15 Gold</span>
+            <span id="clicker-cost" class="cost-tag">15 G</span>
         </button>
 
         <button id="buy-miner" class="upgrade-btn">
             <span>Auto-Miner</span>
-            <span id="miner-cost" class="cost-tag">10 Gold</span>
+            <span id="miner-cost" class="cost-tag">10 G</span>
         </button>
 
         <button id="prestige-btn" class="upgrade-btn">
             <span>ASCEND (Reset)</span>
-            <span class="cost-tag">+1 Multiplier</span>
+            <span class="cost-tag">+1 Multi</span>
         </button>
+        
+        <button onclick="hardReset()" style="background:none; border:none; color:#555; font-size:10px; margin-top:10px;">Hard Reset Data</button>
     </div>
 
     <script>
-        // --- GAME STATE ---
+        // --- INITIAL STATE ---
         let gold = 0;
         let miners = 0;
         let minerCost = 10;
         let clickValue = 1;
         let clickerCost = 15;
-        let prestige = 1; // The multiplier
+        let prestige = 1;
 
-        // --- DOM ELEMENTS ---
         const goldDisplay = document.getElementById('gold-count');
         const gpsDisplay = document.getElementById('gps-count');
         const multiDisplay = document.getElementById('prestige-multi');
@@ -107,18 +108,17 @@
         const prestigeBtn = document.getElementById('prestige-btn');
         const clickContainer = document.getElementById('click-container');
 
-        // --- CORE FUNCTIONS ---
         function updateUI() {
-            goldDisplay.innerText = Math.floor(gold);
-            gpsDisplay.innerText = (miners * prestige).toFixed(1);
-            multiDisplay.innerText = prestige;
-            minerCostDisplay.innerText = minerCost + " G";
-            clickerCostDisplay.innerText = clickerCost + " G";
+            // Fix NaN issues by ensuring numbers aren't null
+            goldDisplay.innerText = Math.floor(gold || 0);
+            gpsDisplay.innerText = ((miners || 0) * (prestige || 1)).toFixed(1);
+            multiDisplay.innerText = prestige || 1;
+            minerCostDisplay.innerText = (minerCost || 10) + " G";
+            clickerCostDisplay.innerText = (clickerCost || 15) + " G";
             
             buyMinerBtn.disabled = (gold < minerCost);
             buyClickerBtn.disabled = (gold < clickerCost);
 
-            // Show prestige button if gold > 1000
             prestigeBtn.style.display = (gold >= 1000 || prestige > 1) ? "flex" : "none";
             prestigeBtn.disabled = (gold < 1000);
         }
@@ -132,9 +132,8 @@
             setTimeout(() => text.remove(), 800);
         }
 
-        // --- BUTTON EVENTS ---
         document.getElementById('click-btn').addEventListener('click', () => {
-            let totalGain = clickValue * prestige;
+            let totalGain = (clickValue || 1) * (prestige || 1);
             gold += totalGain;
             spawnText(totalGain);
             updateUI();
@@ -143,7 +142,7 @@
         buyClickerBtn.addEventListener('click', () => {
             if (gold >= clickerCost) {
                 gold -= clickerCost;
-                clickValue++;
+                clickValue = (clickValue || 1) + 1;
                 clickerCost = Math.floor(clickerCost * 1.5);
                 updateUI();
                 saveGame();
@@ -153,7 +152,7 @@
         buyMinerBtn.addEventListener('click', () => {
             if (gold >= minerCost) {
                 gold -= minerCost;
-                miners++;
+                miners = (miners || 0) + 1;
                 minerCost = Math.floor(minerCost * 1.2);
                 updateUI();
                 saveGame();
@@ -161,36 +160,48 @@
         });
 
         prestigeBtn.addEventListener('click', () => {
-            if (confirm("Ascend? You will lose Gold and Upgrades but gain +1x Multiplier!")) {
-                prestige++;
-                gold = 0;
-                miners = 0;
-                minerCost = 10;
-                clickValue = 1;
-                clickerCost = 15;
+            if (confirm("Ascend? Reset gold/upgrades for +1x Multiplier!")) {
+                prestige = (prestige || 1) + 1;
+                gold = 0; miners = 0; minerCost = 10;
+                clickValue = 1; clickerCost = 15;
                 saveGame();
                 updateUI();
             }
         });
 
-        // --- SYSTEM ---
         function saveGame() {
             const data = { gold, miners, minerCost, clickValue, clickerCost, prestige };
             localStorage.setItem("pixelMinerSave", JSON.stringify(data));
         }
 
         function loadGame() {
-            const data = JSON.parse(localStorage.getItem("pixelMinerSave"));
-            if (data) {
-                gold = data.gold; miners = data.miners; 
-                minerCost = data.minerCost; clickValue = data.clickValue;
-                clickerCost = data.clickerCost; prestige = data.prestige || 1;
-                updateUI();
+            try {
+                const saved = localStorage.getItem("pixelMinerSave");
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    // Use logical OR to provide defaults if values are missing/NaN
+                    gold = Number.isFinite(data.gold) ? data.gold : 0;
+                    miners = Number.isFinite(data.miners) ? data.miners : 0;
+                    minerCost = Number.isFinite(data.minerCost) ? data.minerCost : 10;
+                    clickValue = Number.isFinite(data.clickValue) ? data.clickValue : 1;
+                    clickerCost = Number.isFinite(data.clickerCost) ? data.clickerCost : 15;
+                    prestige = Number.isFinite(data.prestige) ? data.prestige : 1;
+                }
+            } catch (e) {
+                console.log("Save corrupted, using defaults");
+            }
+            updateUI();
+        }
+
+        function hardReset() {
+            if(confirm("Delete ALL progress forever?")) {
+                localStorage.clear();
+                location.reload();
             }
         }
 
         setInterval(() => {
-            gold += (miners * prestige);
+            gold += ((miners || 0) * (prestige || 1));
             updateUI();
         }, 1000);
 
