@@ -29,25 +29,34 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start; /* Changed to start to allow scrolling if needed */
             height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
             touch-action: manipulation;
             transition: 0.3s;
         }
 
-        /* Level Bar */
+        /* 1. FIXED LEVEL BAR (Lowered Z-Index) */
         #level-container {
-            position: absolute; top: 0; width: 100%; height: 30px;
-            background: #333; display: flex; align-items: center; z-index: 100;
+            position: fixed; top: 0; width: 100%; height: 25px;
+            background: #333; display: flex; align-items: center; z-index: 50;
         }
         #xp-bar-fill { height: 100%; width: 0%; background: var(--xp-color); transition: width 0.3s; }
-        #level-text { position: absolute; width: 100%; text-align: center; font-size: 0.8rem; font-weight: bold; text-shadow: 1px 1px 2px black; }
+        #level-text { position: absolute; width: 100%; text-align: center; font-size: 0.75rem; font-weight: bold; text-shadow: 1px 1px 2px black; color: white; }
 
-        .header { position: absolute; top: 40px; display: flex; gap: 10px; align-items: center; width: 90%; justify-content: space-between; }
+        /* 2. FIXED HEADER (Moved down and High Z-Index) */
+        .header { 
+            margin-top: 35px; /* Push below the level bar */
+            display: flex; gap: 10px; align-items: center; 
+            width: 90%; justify-content: space-between; 
+            z-index: 100; /* Ensures it sits on top of everything */
+            padding: 5px 0;
+        }
         
-        .stat-box { text-align: center; margin-top: 50px; margin-bottom: 15px; }
+        #mine-name-display { font-size: 1rem; font-weight: bold; border-bottom: 1px dashed var(--accent); }
+
+        .stat-box { text-align: center; margin-top: 10px; margin-bottom: 15px; }
         #gold-count { font-size: 2.5rem; font-weight: bold; color: var(--trophy-gold); }
 
         /* Trophy Menu Overlay */
@@ -55,31 +64,34 @@
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 85%; max-width: 320px; background: var(--card-bg);
             border: 2px solid var(--trophy-gold); border-radius: 15px;
-            padding: 20px; z-index: 200; display: none; text-align: center;
+            padding: 20px; z-index: 1000; display: none; text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
         .trophy-item { margin: 10px 0; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.2); font-size: 0.9rem; }
 
         #click-btn {
-            width: 130px; height: 130px; border-radius: 50%; border: none;
+            width: 140px; height: 140px; border-radius: 50%; border: none;
             background: radial-gradient(#f39c12, #d35400); color: white;
-            font-size: 1rem; font-weight: bold; box-shadow: 0 8px #a04000;
-            transition: transform 0.05s;
+            font-size: 1.1rem; font-weight: bold; box-shadow: 0 8px #a04000;
+            transition: transform 0.05s; margin: 10px 0;
         }
         #click-btn:active { transform: scale(0.92); }
 
-        .upgrade-section { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
+        .upgrade-section { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;}
         .upgrade-btn {
             width: 100%; padding: 12px; background: var(--card-bg);
             border: 1px solid var(--accent); color: var(--text-color); border-radius: 10px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .cost-tag { background: #0f3460; padding: 3px 8px; border-radius: 6px; color: #4ecca3; }
+        .cost-tag { background: #0f3460; padding: 3px 8px; border-radius: 6px; color: #4ecca3; font-weight: bold; }
 
         .floating-text {
             position: absolute; color: var(--trophy-gold); font-weight: bold; pointer-events: none;
-            animation: floatUp 0.7s ease-out forwards; z-index: 1000;
+            animation: floatUp 0.7s ease-out forwards; z-index: 999;
         }
         @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
+        
+        button { cursor: pointer; }
     </style>
 </head>
 <body class="dark-mode">
@@ -90,28 +102,28 @@
     </div>
 
     <div class="header">
-        <span id="mine-name-display" onclick="renameMine()" style="border-bottom: 1px dashed var(--accent)">My Mine</span>
-        <div>
-            <button onclick="toggleTrophy()" style="background:var(--trophy-gold); border:none; border-radius:10px; padding:4px 8px; color:#000; font-weight:bold;">🏆</button>
-            <button onclick="toggleTheme()" style="background:none; border:1px solid var(--accent); color:var(--text-color); border-radius:10px; padding:4px 8px;">🌓</button>
+        <span id="mine-name-display" onclick="renameMine()">My Mine</span>
+        <div style="display: flex; gap: 8px;">
+            <button onclick="toggleTrophy()" style="background:var(--trophy-gold); border:none; border-radius:10px; padding:6px 12px; color:#000; font-weight:bold;">🏆 Stats</button>
+            <button onclick="toggleTheme()" style="background:var(--card-bg); border:1px solid var(--accent); color:var(--text-color); border-radius:10px; padding:6px 12px;">🌓 Theme</button>
         </div>
     </div>
 
     <div id="trophy-menu">
-        <h2 style="color:var(--trophy-gold)">Trophy Room</h2>
+        <h2 style="color:var(--trophy-gold)">Mine Records</h2>
         <div class="trophy-item">Total Taps: <span id="stat-taps">0</span></div>
         <div class="trophy-item">Lifetime Gold: <span id="stat-life-gold">0</span></div>
         <div class="trophy-item">Prestige Rank: <span id="stat-prestige">1</span></div>
-        <button onclick="toggleTrophy()" style="margin-top:10px; padding:8px 20px; background:var(--accent); border:none; border-radius:10px; color:#fff;">Close</button>
+        <button onclick="toggleTrophy()" style="margin-top:10px; padding:10px 25px; background:var(--accent); border:none; border-radius:10px; color:#fff; font-weight:bold;">CLOSE</button>
     </div>
 
     <div class="stat-box">
-        <div style="color: #9b59b6; font-size: 0.8rem;">Multi: x<span id="prestige-multi">1</span></div>
+        <div style="color: #9b59b6; font-size: 0.8rem; font-weight: bold;">Bonus Multiplier: x<span id="prestige-multi">1</span></div>
         <div>Gold: <span id="gold-count">0</span></div>
-        <div style="font-size: 0.9rem; color: var(--trophy-gold);">+<span id="gps-count">0</span>/s</div>
+        <div style="font-size: 0.9rem; color: var(--trophy-gold);">+<span id="gps-count">0</span> gold/s</div>
     </div>
 
-    <div style="margin-bottom: 20px;"><button id="click-btn">MINE!</button></div>
+    <div style="margin-bottom: 10px;"><button id="click-btn">MINE!</button></div>
 
     <div class="upgrade-section">
         <button id="buy-clicker" class="upgrade-btn">
@@ -122,19 +134,17 @@
             <span>Miners (Lvl <span id="miner-lvl">0</span>)</span>
             <span id="miner-cost" class="cost-tag">10 G</span>
         </button>
-        <button id="prestige-btn" class="upgrade-btn" style="background:#4a148c; display:none; color:white;">
+        <button id="prestige-btn" class="upgrade-btn" style="background:#4a148c; display:none; color:white; border-color: #9b59b6;">
             <span>ASCEND</span>
             <span class="cost-tag">+1 Multi</span>
         </button>
-        <button onclick="hardReset()" style="color:#777; font-size:10px; border:none; background:none; margin-top:10px;">Hard Reset Progress</button>
+        <button onclick="hardReset()" style="color:#777; font-size:10px; border:none; background:none; margin-top:10px; text-decoration: underline;">Hard Reset Progress</button>
     </div>
 
     <script>
         let gold = 0, miners = 0, minerCost = 10, clickValue = 1, clickerCost = 15;
         let prestige = 1, clickerLvl = 1, mineName = "My Mine", isDarkMode = true;
         let playerLevel = 1, currentXP = 0, xpNeeded = 100;
-        
-        // Trophy Stats
         let lifetimeGold = 0, totalTaps = 0;
 
         function updateUI() {
@@ -150,7 +160,7 @@
             document.getElementById('click-lvl').innerText = clickerLvl;
             document.getElementById('mine-name-display').innerText = mineName;
 
-            const percent = (currentXP / xpNeeded) * 100;
+            const percent = Math.min((currentXP / xpNeeded) * 100, 100);
             document.getElementById('xp-bar-fill').style.width = percent + "%";
             document.getElementById('current-lvl').innerText = playerLevel;
 
@@ -158,7 +168,6 @@
             document.getElementById('buy-clicker').disabled = gold < clickerCost;
             document.getElementById('prestige-btn').style.display = gold >= 1000 ? "flex" : "none";
             
-            // Stats Update
             document.getElementById('stat-taps').innerText = totalTaps;
             document.getElementById('stat-life-gold').innerText = Math.floor(lifetimeGold);
             document.getElementById('stat-prestige').innerText = prestige;
@@ -166,11 +175,11 @@
 
         function gainXP(amt) {
             currentXP += amt;
-            if (currentXP >= xpNeeded) {
+            while (currentXP >= xpNeeded) {
                 currentXP -= xpNeeded; playerLevel++;
                 xpNeeded = Math.floor(xpNeeded * 1.3);
-                spawnText("LEVEL UP!", window.innerWidth/2, 100, true);
             }
+            updateUI();
         }
 
         document.getElementById('click-btn').addEventListener('click', (e) => {
@@ -199,19 +208,19 @@
             }
         });
 
-        function spawnText(amt, x, y, isSpec) {
+        function spawnText(amt, x, y) {
             const t = document.createElement('div');
             t.className = 'floating-text';
-            if(isSpec) t.style.color = "#3498db";
-            t.innerText = isNaN(amt) ? amt : "+" + amt;
-            t.style.left = (x || 100) + "px"; t.style.top = (y || 100) + "px";
+            t.innerText = "+" + amt;
+            t.style.left = (x || (window.innerWidth / 2)) + "px"; 
+            t.style.top = (y || (window.innerHeight / 2)) + "px";
             document.body.appendChild(t);
             setTimeout(() => t.remove(), 700);
         }
 
         function toggleTrophy() {
             const m = document.getElementById('trophy-menu');
-            m.style.display = m.style.display === 'none' || m.style.display === '' ? 'block' : 'none';
+            m.style.display = (m.style.display === 'none' || m.style.display === '') ? 'block' : 'none';
         }
 
         function toggleTheme() {
@@ -220,13 +229,18 @@
             saveGame();
         }
 
+        function renameMine() {
+            const n = prompt("Enter Mine Name:", mineName);
+            if(n) { mineName = n; updateUI(); saveGame(); }
+        }
+
         function saveGame() {
             const data = { gold, miners, minerCost, clickValue, clickerCost, prestige, mineName, isDarkMode, clickerLvl, playerLevel, currentXP, xpNeeded, lifetimeGold, totalTaps };
-            localStorage.setItem("pixelMinerV6", JSON.stringify(data));
+            localStorage.setItem("pixelMinerV7", JSON.stringify(data));
         }
 
         function loadGame() {
-            const saved = localStorage.getItem("pixelMinerV6");
+            const saved = localStorage.getItem("pixelMinerV7");
             if(saved) {
                 const d = JSON.parse(saved);
                 gold = Number(d.gold) || 0; miners = Number(d.miners) || 0;
@@ -245,10 +259,16 @@
             const mBonus = Math.floor(miners / 10) + 1;
             const lvlBonus = 1 + (playerLevel * 0.1);
             let pGain = miners * prestige * mBonus * lvlBonus;
-            gold += pGain; lifetimeGold += pGain;
-            if(pGain > 0) gainXP(pGain * 0.1);
+            if (pGain > 0) {
+                gold += pGain; lifetimeGold += pGain;
+                gainXP(pGain * 0.1);
+            }
             updateUI();
         }, 1000);
+
+        setInterval(saveGame, 10000); // Autosave every 10s
+
+        function hardReset() { if(confirm("Erase EVERYTHING?")) { localStorage.clear(); location.reload(); } }
 
         loadGame();
     </script>
