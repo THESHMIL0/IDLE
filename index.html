@@ -5,10 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pixel Miner Pro</title>
     <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --text-color: #ffffff;
+            --card-bg: #16213e;
+            --accent: #4ecca3;
+        }
+
+        /* Light Mode Classes */
+        body.light-mode {
+            --bg-color: #f0f2f5;
+            --text-color: #1a1a2e;
+            --card-bg: #ffffff;
+            --accent: #2ecc71;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a2e;
-            color: #fff;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -17,7 +32,12 @@
             margin: 0;
             overflow: hidden;
             touch-action: manipulation;
+            transition: background 0.3s, color 0.3s;
         }
+
+        .header { position: absolute; top: 20px; display: flex; gap: 10px; }
+        
+        #mine-name-display { font-size: 1.2rem; font-weight: bold; border-bottom: 2px dashed var(--accent); cursor: pointer; }
 
         .stat-box { text-align: center; margin-bottom: 20px; z-index: 5; }
         #gold-count { font-size: 2.5rem; font-weight: bold; color: #f1c40f; }
@@ -25,7 +45,7 @@
 
         #click-container { position: relative; margin-bottom: 20px; z-index: 5; }
         #click-btn {
-            width: 160px; height: 160px;
+            width: 150px; height: 150px;
             border-radius: 50%; border: none;
             background: radial-gradient(#f39c12, #d35400);
             color: white; font-size: 1.2rem; font-weight: bold;
@@ -36,46 +56,39 @@
 
         .upgrade-section { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; z-index: 5; }
         .upgrade-btn {
-            width: 100%; padding: 12px; background: #16213e;
-            border: 1px solid #4ecca3; color: white; border-radius: 8px;
+            width: 100%; padding: 12px; background: var(--card-bg);
+            border: 1px solid var(--accent); color: var(--text-color); border-radius: 8px;
             display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .upgrade-btn:disabled { opacity: 0.3; filter: grayscale(1); }
         
-        #prestige-btn { background: #4a148c; border: 1px solid #9b59b6; display: none; }
+        #prestige-btn { background: #4a148c; border: 1px solid #9b59b6; display: none; color: white; }
         .cost-tag { background: #0f3460; padding: 2px 8px; border-radius: 4px; color: #4ecca3; }
 
-        /* Floating Text Animation */
+        #lucky-nugget {
+            position: absolute; width: 60px; height: 60px;
+            background: #f1c40f; border: 4px solid #fff; border-radius: 50%;
+            display: none; z-index: 100; box-shadow: 0 0 20px #f1c40f;
+            animation: pulse 1s infinite alternate;
+        }
+
         .floating-text {
             position: absolute; color: #f1c40f; font-weight: bold;
             pointer-events: none; animation: floatUp 0.8s ease-out forwards;
         }
-        @keyframes floatUp {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-100px); opacity: 0; }
-        }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.2); } }
 
-        /* Lucky Nugget Style */
-        #lucky-nugget {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: #f1c40f;
-            border: 4px solid #fff;
-            border-radius: 50%;
-            display: none;
-            z-index: 100;
-            box-shadow: 0 0 20px #f1c40f;
-            cursor: pointer;
-            animation: pulse 1s infinite alternate;
-        }
-        @keyframes pulse {
-            from { transform: scale(1); }
-            to { transform: scale(1.2); }
-        }
+        .mode-toggle { padding: 5px 10px; border-radius: 20px; border: 1px solid var(--accent); background: var(--card-bg); color: var(--text-color); font-size: 0.8rem; }
     </style>
 </head>
 <body>
+
+    <div class="header">
+        <span id="mine-name-display" onclick="renameMine()">My Mine</span>
+        <button class="mode-toggle" onclick="toggleTheme()">🌓 Theme</button>
+    </div>
 
     <div id="lucky-nugget"></div>
 
@@ -91,7 +104,7 @@
 
     <div class="upgrade-section">
         <button id="buy-clicker" class="upgrade-btn">
-            <span>Upgrade Pickaxe</span>
+            <span>Pickaxe Upgrade</span>
             <span id="clicker-cost" class="cost-tag">15 G</span>
         </button>
 
@@ -105,16 +118,14 @@
             <span class="cost-tag">+1 Multi</span>
         </button>
         
-        <button onclick="hardReset()" style="background:none; border:none; color:#555; font-size:10px; margin-top:10px;">Hard Reset Data</button>
+        <button onclick="hardReset()" style="background:none; border:none; color:#777; font-size:10px; margin-top:10px;">Hard Reset Data</button>
     </div>
 
     <script>
-        let gold = 0;
-        let miners = 0;
-        let minerCost = 10;
-        let clickValue = 1;
-        let clickerCost = 15;
-        let prestige = 1;
+        // --- DATA ---
+        let gold = 0, miners = 0, minerCost = 10;
+        let clickValue = 1, clickerCost = 15, prestige = 1;
+        let mineName = "My Mine", isDarkMode = true;
 
         const goldDisplay = document.getElementById('gold-count');
         const gpsDisplay = document.getElementById('gps-count');
@@ -126,13 +137,32 @@
         const prestigeBtn = document.getElementById('prestige-btn');
         const clickContainer = document.getElementById('click-container');
         const luckyNugget = document.getElementById('lucky-nugget');
+        const nameDisplay = document.getElementById('mine-name-display');
 
+        // --- THEME & NAME ---
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('light-mode', !isDarkMode);
+            saveGame();
+        }
+
+        function renameMine() {
+            const newName = prompt("Enter your mine's name:", mineName);
+            if (newName) {
+                mineName = newName;
+                nameDisplay.innerText = mineName;
+                saveGame();
+            }
+        }
+
+        // --- CORE LOGIC ---
         function updateUI() {
             goldDisplay.innerText = Math.floor(gold || 0);
             gpsDisplay.innerText = ((miners || 0) * (prestige || 1)).toFixed(1);
             multiDisplay.innerText = prestige || 1;
             minerCostDisplay.innerText = (minerCost || 10) + " G";
             clickerCostDisplay.innerText = (clickerCost || 15) + " G";
+            nameDisplay.innerText = mineName;
             
             buyMinerBtn.disabled = (gold < minerCost);
             buyClickerBtn.disabled = (gold < clickerCost);
@@ -151,7 +181,6 @@
             setTimeout(() => text.remove(), 800);
         }
 
-        // Main Mining Click
         document.getElementById('click-btn').addEventListener('click', () => {
             let totalGain = (clickValue || 1) * (prestige || 1);
             gold += totalGain;
@@ -159,7 +188,6 @@
             updateUI();
         });
 
-        // Lucky Nugget Click
         luckyNugget.addEventListener('click', () => {
             let bonus = Math.floor(((miners * prestige) * 30) + 50);
             gold += bonus;
@@ -168,16 +196,14 @@
             updateUI();
         });
 
-        // Lucky Nugget Spawner Loop
+        // Lucky Nugget Spawner
         setInterval(() => {
-            if (Math.random() > 0.7) { // 30% chance every 10s
+            if (Math.random() > 0.7) {
                 const x = Math.random() * (window.innerWidth - 60);
                 const y = Math.random() * (window.innerHeight - 60);
                 luckyNugget.style.left = x + 'px';
                 luckyNugget.style.top = y + 'px';
                 luckyNugget.style.display = 'block';
-                
-                // Disappear after 4 seconds
                 setTimeout(() => { luckyNugget.style.display = 'none'; }, 4000);
             }
         }, 10000);
@@ -185,7 +211,7 @@
         buyClickerBtn.addEventListener('click', () => {
             if (gold >= clickerCost) {
                 gold -= clickerCost;
-                clickValue = (clickValue || 1) + 1;
+                clickValue++;
                 clickerCost = Math.floor(clickerCost * 1.5);
                 updateUI();
                 saveGame();
@@ -195,7 +221,7 @@
         buyMinerBtn.addEventListener('click', () => {
             if (gold >= minerCost) {
                 gold -= minerCost;
-                miners = (miners || 0) + 1;
+                miners++;
                 minerCost = Math.floor(minerCost * 1.2);
                 updateUI();
                 saveGame();
@@ -203,8 +229,8 @@
         });
 
         prestigeBtn.addEventListener('click', () => {
-            if (confirm("Ascend for +1x Multiplier?")) {
-                prestige = (prestige || 1) + 1;
+            if (confirm("Ascend? You gain a multiplier but reset your mine!")) {
+                prestige++;
                 gold = 0; miners = 0; minerCost = 10;
                 clickValue = 1; clickerCost = 15;
                 saveGame();
@@ -212,24 +238,29 @@
             }
         });
 
+        // --- SAVE SYSTEM ---
         function saveGame() {
-            const data = { gold, miners, minerCost, clickValue, clickerCost, prestige };
-            localStorage.setItem("pixelMinerSave", JSON.stringify(data));
+            const data = { gold, miners, minerCost, clickValue, clickerCost, prestige, mineName, isDarkMode };
+            localStorage.setItem("pixelMinerSavePro", JSON.stringify(data));
         }
 
         function loadGame() {
             try {
-                const saved = localStorage.getItem("pixelMinerSave");
+                const saved = localStorage.getItem("pixelMinerSavePro");
                 if (saved) {
                     const data = JSON.parse(saved);
-                    gold = Number.isFinite(data.gold) ? data.gold : 0;
-                    miners = Number.isFinite(data.miners) ? data.miners : 0;
-                    minerCost = Number.isFinite(data.minerCost) ? data.minerCost : 10;
-                    clickValue = Number.isFinite(data.clickValue) ? data.clickValue : 1;
-                    clickerCost = Number.isFinite(data.clickerCost) ? data.clickerCost : 15;
-                    prestige = Number.isFinite(data.prestige) ? data.prestige : 1;
+                    gold = data.gold || 0;
+                    miners = data.miners || 0;
+                    minerCost = data.minerCost || 10;
+                    clickValue = data.clickValue || 1;
+                    clickerCost = data.clickerCost || 15;
+                    prestige = data.prestige || 1;
+                    mineName = data.mineName || "My Mine";
+                    isDarkMode = data.isDarkMode !== undefined ? data.isDarkMode : true;
+                    
+                    document.body.classList.toggle('light-mode', !isDarkMode);
                 }
-            } catch (e) { console.log("Save error"); }
+            } catch (e) { console.log("Load error"); }
             updateUI();
         }
 
@@ -241,7 +272,7 @@
         }
 
         setInterval(() => {
-            gold += ((miners || 0) * (prestige || 1));
+            gold += (miners * prestige);
             updateUI();
         }, 1000);
 
